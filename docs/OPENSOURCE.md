@@ -44,10 +44,11 @@ git config user.email "YOUR_PUBLIC_GITHUB_NOREPLY@users.noreply.github.com"
 
 1. 公开仓库 `customer-service-ai`  
 2. 开启 Issues（可选 Discussions）  
-3. 开启 Private vulnerability reporting  
-4. 保护 `main` 分支  
-5. Topics：`spring-ai`、`java`、`dify`、`rag`、`customer-service`、`openai-compatible`  
-6. 描述示例：  
+3. 开启 Private vulnerability reporting + Dependabot  
+4. 保护 `main`（Ruleset）：外部改动走 PR + CI；**管理员可 bypass 直推**，避免单人维护卡死  
+5. CI：`test`（install-framework + `mvn test`）与 `secrets-hygiene`  
+6. Topics：`spring-ai`、`java`、`dify`、`rag`、`customer-service`、`openai-compatible`  
+7. 描述示例：  
 
    > 基于 Spring AI 的企业智能客服编排：可插拔本地/云端大模型，Dify 知识检索。
 

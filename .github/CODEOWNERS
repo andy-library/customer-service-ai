@@ -1,0 +1,4 @@
+# Default owner for all paths (solo maintainer).
+# Review requests are advisory for the owner; branch ruleset allows admin bypass
+# so the maintainer can still push directly to main when needed.
+*       @andy-library

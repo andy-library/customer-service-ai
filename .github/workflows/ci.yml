@@ -2,13 +2,24 @@ name: CI
 
 on:
   push:
-    branches: [main, master, "feat/**"]
+    branches: [main]
   pull_request:
-    branches: [main, master]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
+  # Job id/name "test" is the required status check for PR merges.
   test:
+    name: test
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,10 +31,25 @@ jobs:
           java-version: "21"
           cache: maven
 
+      - name: Install microservice-framework (local m2)
+        # Parent POM is not on Maven Central; install from public GitHub source.
+        run: bash ./scripts/install-framework.sh
+        env:
+          FRAMEWORK_CLONE_DIR: ${{ runner.temp }}/microservice-framework
+
       - name: Unit tests
-        # Framework parent must be resolvable from Maven Central or a prior install step.
-        # If the parent is only available privately, replace this step with your org's setup.
-        run: mvn -B -q test
+        run: mvn -B test
         env:
           # Keep CI offline from external LLM/Dify; unit tests use mocks.
           MAVEN_OPTS: "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
+
+  secrets-hygiene:
+    name: secrets-hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan tracked files for high-risk secrets
+        run: bash ./scripts/ci-secret-scan.sh

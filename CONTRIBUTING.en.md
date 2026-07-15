@@ -33,6 +33,25 @@ See [docs/getting-started.md](docs/getting-started.md) (Chinese).
 - Add/update tests for behavior changes  
 - Prefer backward-compatible `/api/v1` changes  
 
+## Pull requests
+
+1. Fork from latest `main` and open a focused branch  
+2. Run locally:
+
+   ```bash
+   ./scripts/install-framework.sh
+   mvn test
+   bash ./scripts/ci-secret-scan.sh
+   ```
+
+3. Open a PR with the template filled in  
+4. Wait for CI jobs `test` and `secrets-hygiene` to pass  
+5. Maintainer merges (squash preferred)
+
+### Maintainer note (solo)
+
+External changes go through PRs with required CI. The repository admin may **bypass** branch rules and push directly to `main` when needed so self-maintenance is not blocked. Direct pushes still run CI on `main`.
+
 ## License
 
 By contributing, you agree that your contributions are licensed under **Apache License 2.0**.

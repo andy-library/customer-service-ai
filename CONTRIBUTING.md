@@ -52,12 +52,31 @@
 - 行为变更请补充/更新单元测试  
 - 尽量保持 `/api/v1` 兼容；破坏性变更写入 `CHANGELOG.md`  
 
-## Pull Request
+## Pull Request（推荐流程）
 
-1. Fork 并创建功能分支  
-2. 提交信息清晰、改动聚焦  
-3. 确保 `mvn test` 通过  
-4. PR 说明：改了什么、为何改、如何验证、关联 Issue  
+**外部贡献必须走 PR**；维护者可直接推送到 `main`（见下方说明）。
+
+1. Fork 仓库，从最新 `main` 创建功能分支（建议：`feat/...`、`fix/...`、`docs/...`）  
+2. 提交信息清晰、改动聚焦；一个 PR 只做一件事  
+3. 本地验证：
+
+   ```bash
+   ./scripts/install-framework.sh
+   mvn test
+   bash ./scripts/ci-secret-scan.sh
+   ```
+
+4. 打开 PR，填写模板（摘要 / 验证方式 / 检查清单）  
+5. 等待 GitHub Actions **全部通过**：
+   - `test`：安装 framework + `mvn test`
+   - `secrets-hygiene`：防止把真实密钥推入仓库  
+6. 维护者审核后合并（优先 Squash merge）；合并后功能分支可删除  
+
+### 维护者说明（单人维护）
+
+- 仓库开启了 `main` 分支规则：对**非维护者**要求通过 PR，且 CI 通过后再合并。  
+- **管理员（维护者）拥有 bypass**，可在紧急修复、文档微调等场景下直接推送到 `main`，避免自我卡死。  
+- 即便直推，`push` 仍会触发 CI；若 CI 失败请尽快修复，保持主干可构建。  
 
 ## Issue 报告
 
