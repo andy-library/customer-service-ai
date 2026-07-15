@@ -3,20 +3,17 @@
 | 字段 | 值 |
 |------|-----|
 | 分支 | feat/csai-mvp |
-| 状态 | **真实联调：Chat 已通；Embedding 待开通** |
-| 应用 | 运行中 http://localhost:8081 （真实 glm-5.1） |
+| 当前 | **全本地 llama 部署文档与脚本已就绪** |
+| 机器 | Mac M1 64G；模型在 /Users/andy.yang/LocalModels |
+| Chat 推荐 | Qwen3.6-35B-A3B IQ2_M → :8082 alias qwen3.6-35b |
+| Embed | 需下载 Qwen3-Embedding-0.6B 或 bge-m3 → :8083 |
 
-## 已验证
+## 用户下一步
 
-- Key / Base URL / glm-5.1 Chat ✅
-- 闲聊「你好」→ CHITCHAT + 正常中文回复 ✅
-- 路径 404 已修（compatible-mode 不去重 /v1）✅
+1. 下载 embedding GGUF 到 LocalModels
+2. ./scripts/local-llm/start-chat.sh && start-embed.sh
+3. ./scripts/local-llm/healthcheck.sh
+4. 用 .env.local-llama.example 覆盖/合并 .env
+5. 启动 Spring 非 mock 验收
 
-## 待用户操作
-
-- 百炼控制台开通 **text-embedding-v3**（或告知可用 embedding 模型名+维度）
-- 开通后回复「embedding 已开通」→ 再测上传 + RAG 退款问答
-
-## 勿泄露
-
-- .env 含 API Key，永不提交
+详见 docs/development/LOCAL-LLAMA-全量部署-M1.md
