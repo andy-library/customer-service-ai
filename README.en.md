@@ -8,22 +8,40 @@
 
 **English** | [简体中文](README.md)
 
-Enterprise **intelligent customer-service orchestration** built with Spring AI.
+A **reference implementation** for extending enterprise microservice systems with **AI + RAG knowledge** capabilities (Spring AI · Dify · OpenAI-compatible models).
 
 | | |
 |---|---|
 | **Repository** | https://github.com/andy-library/customer-service-ai |
 | **Author / Maintainer** | **andy yang** |
 | **License** | [Apache License 2.0](LICENSE) |
-| **Version** | `0.2.0-rc.1` (quasi-production RC) |
+| **Version** | `0.2.0-rc.1` (**demo / integration sample**, not a production product) |
 
-This service is the **orchestration layer** for AI customer service. It does **not** replace your knowledge CMS: knowledge is authored in **Dify** (or optionally local PgVector). The app classifies intent, selects models, retrieves snippets, and generates grounded answers with citations.
+---
+
+## Project background
+
+Enterprise microservice landscapes usually already include mature domain services and delivery standards. When teams introduce **AI chat + RAG knowledge bases**, they repeatedly face shared challenges: model connectivity, retrieval orchestration, alignment with existing engineering stacks, and operability.
+
+This repository is a **runnable sample** built for those challenges.
+
+| Dimension | Description |
+|-----------|-------------|
+| **Primary goal** | Combine with enterprise microservice projects to demonstrate how the Spring stack can extend **AI + RAG knowledge** capabilities and support intelligent business scenarios. |
+| **Current focus** | **Integration testing of Spring AI with Dify** (plus OpenAI-compatible local/cloud models)—documenting configuration, call chains, and engineering patterns rather than shipping a full commercial product. |
+| **What you get** | Reference building blocks: intent routing, multi-model gateway, Dify retrieve, streaming chat, basic security and degradation—for learning, joint debugging, and customization. |
+| **Not production-ready** | **This project is not a drop-in production customer-service system.** SLA, compliance, multi-tenancy, channel integration, HA, and full operations are out of scope. |
+| **Roadmap** | Based on lessons from this work, we plan to open-source a **production-oriented intelligent customer-service solution** separately. This repo remains a source of ideas and integration patterns. |
+
+> **In one line**: a reference for “microservices + Spring AI + Dify”—**not** an out-of-the-box production product.
 
 ---
 
 ## Table of contents
 
+- [Project background](#project-background)
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Architecture](#architecture)
 - [Tech stack](#tech-stack)
 - [Quick start](#quick-start)
@@ -52,11 +70,13 @@ This service is the **orchestration layer** for AI customer service. It does **n
 | **Quality** | Guardrails, evidence policy, handoff placeholder |
 | **Ops** | Health, Micrometer metrics, audit log, Docker, runbook |
 
+> Features above support **integration demos and solution exploration**. Do not treat this repository as a production deliverable without your own hardening, review, and acceptance process.
+
 ---
 
 ## Screenshots
 
-Admin console UI (local integration example, for community reference):
+Admin console UI (local integration example for community reference; UI may change across versions):
 
 ### Home
 
