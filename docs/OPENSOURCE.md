@@ -85,7 +85,7 @@ git push origin v0.2.0-rc.1
 3. [architecture.md](architecture.md)  
 4. [configuration.md](configuration.md)  
 5. [operations/RUNBOOK.md](operations/RUNBOOK.md)  
-6. Production design under `docs/superpowers/specs/`  
+6. [requirements/PRD.md](requirements/PRD.md)
 
 ## Dependency note
 

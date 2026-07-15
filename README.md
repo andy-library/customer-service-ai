@@ -183,7 +183,7 @@ export CSAI_API_KEY_ADMIN="$(openssl rand -hex 24)"
 | [CHANGELOG.md](CHANGELOG.md) | Releases |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guide |
 
-Deep-dive Chinese product/design docs live under `docs/requirements/`, `docs/superpowers/`, and `docs/development/`.
+Deep dives: [docs/requirements/PRD.md](docs/requirements/PRD.md), [docs/development/](docs/development/).
 
 ---
 
@@ -210,7 +210,7 @@ Shared run configurations are under [`.run/`](.run/). After opening the project:
 2. Start Postgres: `docker compose up -d postgres`
 3. Run **Csai · Mock (offline)** or **Csai · Local Real (llama + Dify)**
 
-Full guide (Chinese): [docs/development/IDEA-启动配置.md](docs/development/IDEA-启动配置.md)
+Full guide: [docs/development/IDEA-RUN.md](docs/development/IDEA-RUN.md)
 
 ## Tests
 

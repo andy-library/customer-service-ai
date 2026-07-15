@@ -61,7 +61,8 @@ com.enterprise.csai
 ## Request lifecycle (chat)
 
 ```
-POST /api/v1/chat
+POST /api/v1/chat            (sync)
+POST /api/v1/chat/stream     (SSE: status / delta / meta)
   → ApiKeyAuthFilter (optional)
   → RateLimitFilter
   → ChatOrchestrator
@@ -69,10 +70,12 @@ POST /api/v1/chat
        → RoutingService (classifier model)
        → HandoffPolicy (optional short-circuit)
        → KnowledgePort.search (if RAG needed)
-       → ModelPort.chat (answer model)
+       → ModelPort.chat / stream (answer model)
        → Persist session/messages/route/audit
        → Return answer + route + sources + degraded/handoff
 ```
+
+Admin UI (`/admin/chat`) uses the streaming endpoint for token-by-token display.
 
 ## Pluggable backends
 
@@ -99,7 +102,9 @@ Switching model source reloads the registry at process start (restart required).
 | PgVector | Only when `knowledge.provider=local` |
 | Dify | Primary enterprise knowledge index |
 
-## Related specs
+## Related docs
 
-- Production design: `docs/superpowers/specs/2026-07-15-csai-production-refactor-design.md`
-- Production assessment: `docs/analysis/ARCHITECTURE-生产级评估-v1.md`
+- Product requirements: [requirements/PRD.md](requirements/PRD.md)
+- Configuration: [configuration.md](configuration.md)
+- Operations: [operations/RUNBOOK.md](operations/RUNBOOK.md)
+- Dify & models: [development/DIFY-AND-MODELS.md](development/DIFY-AND-MODELS.md)
