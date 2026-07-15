@@ -27,20 +27,26 @@
 docker compose up -d
 ```
 
-### 3. 配置密钥（真实模型）
+### 3. 配置密钥（真实模型联调）
 
 ```bash
 cp .env.example .env
-# 编辑 .env 填入 OpenAI-compatible base-url / api-key
-set -a && source .env && set +a
-mvn spring-boot:run
+# 编辑 .env：至少 CS_AI_DEFAULT_BASE_URL + CS_AI_DEFAULT_API_KEY
+./scripts/check-env.sh
+./scripts/run-real.sh
+# 另一终端：
+./scripts/smoke-real.sh http://localhost:8081
 ```
+
+详见：`docs/development/REAL-MODEL-联调.md`  
+要求端点为 **OpenAI-compatible**（DeepSeek / 通义 compatible / OpenAI 等）。Anthropic 原生 API 不支持。
 
 ### 4. 无密钥演示（mock）
 
 ```bash
 docker compose up -d
-mvn spring-boot:run -Dspring-boot.run.profiles=mock
+mvn spring-boot:run -Dspring-boot.run.profiles=mock \
+  -Dspring-boot.run.arguments=--server.port=8081
 ```
 
 mock 使用确定性分类/回答与内存向量库，仍依赖 Postgres 存业务表。

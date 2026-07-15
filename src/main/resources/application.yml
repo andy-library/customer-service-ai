@@ -21,6 +21,12 @@ spring:
     openai:
       api-key: ${CS_AI_DEFAULT_API_KEY:sk-placeholder}
       base-url: ${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}
+      chat:
+        options:
+          model: ${CS_AI_ANSWER_FAST_MODEL:gpt-4o-mini}
+      embedding:
+        options:
+          model: ${CS_AI_EMBEDDING_MODEL:text-embedding-3-small}
     vectorstore:
       pgvector:
         initialize-schema: true
