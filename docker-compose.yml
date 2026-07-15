@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: csai
+      POSTGRES_USER: csai
+      POSTGRES_PASSWORD: csai
+    ports:
+      - "5432:5432"
+    volumes:
+      - csai_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U csai -d csai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  csai_pg:

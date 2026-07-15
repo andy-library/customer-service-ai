@@ -1,0 +1,8 @@
+# Offline / CI profile — real LLM endpoints are replaced by mock beans (Task 9).
+spring:
+  main:
+    allow-bean-definition-overriding: true
+
+logging:
+  level:
+    com.enterprise.csai: DEBUG

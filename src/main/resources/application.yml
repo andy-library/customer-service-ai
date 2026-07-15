@@ -1,0 +1,79 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: customer-service-ai
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:csai}
+    username: ${DB_USER:csai}
+    password: ${DB_PASSWORD:csai}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+  ai:
+    openai:
+      api-key: ${CS_AI_DEFAULT_API_KEY:sk-placeholder}
+      base-url: ${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: ${CS_AI_EMBEDDING_DIMENSIONS:1536}
+
+framework:
+  common:
+    time:
+      time-zone: Asia/Shanghai
+  web:
+    response:
+      include-timestamp: true
+      include-request-id: true
+  database:
+    migration:
+      enabled: true
+      locations: classpath:db/migration
+  security:
+    path:
+      permit-paths:
+        - /api/v1/**
+        - /admin/**
+        - /swagger-ui/**
+        - /swagger-ui.html
+        - /v3/api-docs/**
+        - /actuator/health
+        - /actuator/info
+
+csai:
+  models: []
+  embedding:
+    base-url: ${CS_AI_EMBEDDING_BASE_URL:${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}}
+    api-key: ${CS_AI_EMBEDDING_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-placeholder}}
+    model-name: ${CS_AI_EMBEDDING_MODEL:text-embedding-3-small}
+    dimensions: 1536
+  router:
+    classifier-model-id: classifier-default
+    default-answer-model-id: answer-fast
+    force-rag: false
+    intent-model-mapping: {}
+  rag:
+    top-k: 5
+    similarity-threshold: 0.50
+    chunk-size: 800
+    chunk-overlap: 100
+  chat:
+    history-max-messages: 6
+  upload:
+    max-bytes: 10485760
+    allowed-extensions:
+      - pdf
+      - md
+      - txt
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
