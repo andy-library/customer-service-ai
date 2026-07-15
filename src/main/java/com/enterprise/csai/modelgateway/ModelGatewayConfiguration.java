@@ -46,10 +46,7 @@ public class ModelGatewayConfiguration {
     }
 
     static ChatModel buildChatModel(CsaiProperties.ModelConfig model) {
-        OpenAiApi api = OpenAiApi.builder()
-                .baseUrl(normalizeBaseUrl(model.getBaseUrl()))
-                .apiKey(model.getApiKey())
-                .build();
+        OpenAiApi api = OpenAiCompatibleClients.create(model.getBaseUrl(), model.getApiKey());
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model(model.getModelName())
                 .build();

@@ -28,10 +28,7 @@ public class EmbeddingModelConfiguration {
     EmbeddingModel csaiEmbeddingModel(CsaiProperties properties) {
         CsaiProperties.EmbeddingConfig emb = properties.getEmbedding();
         String baseUrl = ModelGatewayConfiguration.normalizeBaseUrl(emb.getBaseUrl());
-        OpenAiApi api = OpenAiApi.builder()
-                .baseUrl(baseUrl)
-                .apiKey(emb.getApiKey())
-                .build();
+        OpenAiApi api = OpenAiCompatibleClients.create(emb.getBaseUrl(), emb.getApiKey());
         OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
                 .model(emb.getModelName())
                 .dimensions(emb.getDimensions())

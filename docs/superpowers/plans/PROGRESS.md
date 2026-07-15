@@ -4,36 +4,21 @@
 |------|-----|
 | 最后更新 | 2026-07-15 |
 | 当前分支 | `feat/csai-mvp` |
-| 当前任务 | **百炼 glm-5.1 配置说明已给出；等待用户填 Key 并启动** |
-| 当前步骤 | 用户按 BAILIAN-GLM-配置.md 写 .env（compatible-mode + glm-5.1）后 reply 继续 smoke |
-| 阻塞 | 无配置阻塞；需用户本地 `.env` 填 API Key（Anthropic URL 不能给 Spring 直连） |
+| 当前任务 | **百炼联调：.env 非密钥项已补全** |
+| 当前步骤 | 等待用户填写 `CS_AI_DEFAULT_API_KEY` 后启动 smoke |
+| 阻塞 | 仅差百炼 API Key |
 
-## 已完成
+## 用户待填
 
-- MVP Task 1–10（mock 端到端）✅  
-- 真实联调工具：
-  - `scripts/check-env.sh` / `run-real.sh` / `smoke-real.sh`
-  - `EmbeddingModelConfiguration`（`!mock`，使用 `csai.embedding`）
-  - `docs/development/REAL-MODEL-联调.md`
+- [ ] `CS_AI_DEFAULT_API_KEY` = 百炼 API Key（可与 CC Switch Ali-GLM 5.1 相同）
 
-## 用户操作（继续联调）
+## 已由助手写入 .env
 
-```bash
-cp .env.example .env
-# 编辑 .env 填入 OpenAI-compatible：
-#   CS_AI_DEFAULT_BASE_URL
-#   CS_AI_DEFAULT_API_KEY
-#   以及可用的 chat / embedding 模型名
-./scripts/check-env.sh
-./scripts/run-real.sh
-# 另开终端：
-./scripts/smoke-real.sh http://localhost:8081
-```
+- Base URL: `https://dashscope.aliyuncs.com/compatible-mode/v1`
+- Chat models: `glm-5.1` × 3 角色
+- Embedding: `text-embedding-v3` / dim `1024`
+- DB / worker / port 8081
 
-填好 `.env` 后回复「已配置」或「继续」，我会代为执行 check + 启动 + smoke（**不会**在日志中回显密钥）。
+## 下一步
 
-## 会话日志
-
-| 时间 | 事件 |
-|------|------|
-| 2026-07-15 | 选项1：真实模型联调；完成工具与文档；等待 .env |
+用户填好 Key 后回复「已填 Key」→ `./scripts/check-env.sh` + `run-real.sh` + `smoke-real.sh`

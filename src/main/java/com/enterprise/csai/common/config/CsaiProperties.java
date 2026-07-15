@@ -178,7 +178,7 @@ public class CsaiProperties {
         @NotBlank
         private String modelName = "text-embedding-3-small";
         @Min(1)
-        private int dimensions = 1536;
+        private int dimensions = 1024;
 
         public String getBaseUrl() {
             return baseUrl;

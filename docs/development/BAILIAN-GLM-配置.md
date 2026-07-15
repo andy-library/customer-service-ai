@@ -204,3 +204,15 @@ OpenCode / 其它 OpenAI 协议工具（可选）：
 | 401 | Key 错误或未开通模型 | 控制台开通 GLM / Embedding |
 | 向量维度错误 | dimensions 与 embedding 模型不符 | 改 `CS_AI_EMBEDDING_DIMENSIONS` 并重建向量表 |
 | 本地 15721 调 /chat/completions 失败 | CC Switch 代理按 Codex/Claude 路由 | Spring 直连百炼兼容端点 |
+
+
+## 7. 联调实测记录（2026-07-15）
+
+| 能力 | 结果 |
+|------|------|
+| Base URL `compatible-mode/v1` + 路径去重 `/v1` | 已修复（OpenAiCompatibleClients） |
+| Chat `glm-5.1` 闲聊 | ✅ 成功（intent=CHITCHAT） |
+| Embedding `text-embedding-v3` | ❌ `Model.AccessDenied`（控制台需开通/授权） |
+| RAG 上传/检索 | 依赖 embedding 开通后重试 |
+
+**处理：** 在百炼控制台开通 **text-embedding-v3**（或改用你有权限的 embedding 模型，并同步改 `.env` 的 `CS_AI_EMBEDDING_MODEL` / `CS_AI_EMBEDDING_DIMENSIONS`）。

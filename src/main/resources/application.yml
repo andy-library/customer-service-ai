@@ -32,7 +32,7 @@ spring:
         initialize-schema: true
         index-type: HNSW
         distance-type: COSINE_DISTANCE
-        dimensions: ${CS_AI_EMBEDDING_DIMENSIONS:1536}
+        dimensions: ${CS_AI_EMBEDDING_DIMENSIONS:1024}
 
 framework:
   common:
@@ -87,8 +87,8 @@ csai:
   embedding:
     base-url: ${CS_AI_EMBEDDING_BASE_URL:${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}}
     api-key: ${CS_AI_EMBEDDING_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-placeholder}}
-    model-name: ${CS_AI_EMBEDDING_MODEL:text-embedding-3-small}
-    dimensions: 1536
+    model-name: ${CS_AI_EMBEDDING_MODEL:text-embedding-v3}
+    dimensions: ${CS_AI_EMBEDDING_DIMENSIONS:1024}
   router:
     classifier-model-id: classifier-default
     default-answer-model-id: answer-fast
