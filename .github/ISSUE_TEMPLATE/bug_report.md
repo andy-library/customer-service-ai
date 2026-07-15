@@ -1,36 +1,36 @@
 ---
-name: Bug report
-about: Report a bug to help us improve
+name: 缺陷报告
+about: 报告问题以帮助改进项目
 title: "[bug] "
 labels: bug
 assignees: ""
 ---
 
-## Description
+## 问题描述
 
-A clear description of the bug.
+清晰描述缺陷现象。
 
-## Environment
+## 环境
 
-- OS:
-- JDK:
-- Project version / commit:
-- Model source (`local` / `cloud`):
-- Knowledge provider (`dify` / `local` / `none`):
-- Security enabled (yes/no):
+- 操作系统：
+- JDK 版本：
+- 项目版本 / commit：
+- 模型源（`local` / `cloud`）：
+- 知识提供方（`dify` / `local` / `none`）：
+- 是否开启安全（是/否）：
 
-## Steps to reproduce
+## 复现步骤
 
 1.
 2.
 3.
 
-## Expected behavior
+## 期望结果
 
-## Actual behavior
+## 实际结果
 
-## Logs
+## 日志
 
 ```text
-(paste redacted logs here — remove API keys)
+（粘贴脱敏后的日志，勿包含 API Key）
 ```

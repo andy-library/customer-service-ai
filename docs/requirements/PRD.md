@@ -1,124 +1,124 @@
-# Product Requirements — customer-service-ai
+# 产品需求说明 — customer-service-ai
 
-| Field | Value |
-|-------|-------|
-| Version | **1.0** (matches app `0.2.0-rc.1`) |
-| Status | **Implemented** |
-| Author | andy yang |
-| Scope | Quasi-production intelligent customer-service orchestration |
-
----
-
-## 1. Goals
-
-Provide a Spring AI **orchestration service** that:
-
-- Classifies user intent and routes to appropriate models  
-- Retrieves enterprise knowledge (Dify primary; optional local PgVector)  
-- Generates grounded answers with **sources**  
-- Supports **local** (llama.cpp) and **cloud** (OpenAI-compatible) model backends  
-- Offers optional API-key security, rate limiting, timeouts, degradation signals, and handoff placeholders  
-- Exposes health, metrics, audit, and Docker packaging  
-
-### 1.1 Success criteria
-
-| ID | Criterion |
-|----|-----------|
-| G1 | Unauthenticated access denied when security enabled (401) |
-| G2 | Session ownership enforced across principals |
-| G3 | Model/Dify timeouts and degraded knowledge paths |
-| G4 | Rate limit returns 429 when exceeded |
-| G5 | Responses include `route`, `sources`, optional `degraded` / `handoff` |
-| G6 | Knowledge providers: `dify` \| `local` \| `none` |
-| G7 | Handoff placeholder via policy (low confidence / user request / unknown) |
-| G8 | Docker + runbook + smoke scripts available |
-| G9 | Automated unit tests pass (`mvn test`) |
-
-### 1.2 Non-goals
-
-- Full ticketing / CRM  
-- Multi-channel gateways (WeCom, DingTalk, …)  
-- Multi-tenant SaaS billing  
-- Microservice mesh split  
-- Replacing Dify as the knowledge authoring platform  
+| 字段 | 值 |
+|------|-----|
+| 版本 | **1.0**（对应应用 `0.2.0-rc.1`） |
+| 状态 | **已实现** |
+| 作者 | andy yang |
+| 范围 | 准生产智能客服编排 |
 
 ---
 
-## 2. Actors
+## 1. 目标
 
-| Actor | Needs |
-|-------|--------|
-| End user (via BFF/client) | Ask questions; get grounded answers |
-| Operator | Admin UI for chat test, knowledge status, model list |
-| Developer / SRE | Configure models, Dify, security; observe health/metrics |
+提供基于 Spring AI 的**客服编排服务**，实现：
+
+- 意图分类并路由到合适模型  
+- 检索企业知识（Dify 主路径；可选本地 PgVector）  
+- 生成可引用 **sources** 的回答  
+- 支持 **local**（llama.cpp）与 **cloud**（OpenAI 兼容）模型后端  
+- 可选 API Key 安全、限流、超时、降级标记与转人工占位  
+- 暴露健康检查、指标、审计与 Docker 交付  
+
+### 1.1 成功标准
+
+| ID | 标准 |
+|----|------|
+| G1 | 开启安全时未授权访问被拒绝（401） |
+| G2 | 会话归属跨主体强制校验 |
+| G3 | 模型/Dify 超时与知识降级路径可用 |
+| G4 | 超限返回 429 |
+| G5 | 响应含 `route`、`sources`，以及可选 `degraded` / `handoff` |
+| G6 | 知识提供方：`dify` \| `local` \| `none` |
+| G7 | 转人工占位（低置信 / 用户请求 / UNKNOWN 策略） |
+| G8 | Docker + Runbook + 冒烟脚本齐全 |
+| G9 | 自动化单元测试通过（`mvn test`） |
+
+### 1.2 非目标
+
+- 完整工单 / CRM  
+- 多渠道中台（企微、钉钉等）  
+- SaaS 多租户计费  
+- 微服务网格拆分  
+- 用本服务替代 Dify 做知识创作平台  
 
 ---
 
-## 3. Functional requirements (implemented)
+## 2. 角色
 
-### Chat
+| 角色 | 诉求 |
+|------|------|
+| 终端用户（经 BFF/客户端） | 提问并获得有据回答 |
+| 运营 | 管理台对话测试、知识状态、模型列表 |
+| 研发 / SRE | 配置模型与 Dify、安全策略，观察健康与指标 |
 
-- `POST /api/v1/chat` — synchronous answer  
-- `POST /api/v1/chat/stream` — SSE streaming (`status` / `delta` / `meta`)  
-- Session continuity via `sessionId` + server-side history  
-- Response fields: `answer`, `route`, `sources`, `degraded`, `degradedReasons`, `handoff`, `handoffReason`  
+---
 
-### Knowledge
+## 3. 功能需求（已实现）
 
-- Provider `dify`: Dataset retrieve API + segment fallback when retrieve fails  
-- Provider `local`: PgVector ingest/search  
-- Provider `none`: no retrieval (e.g. mock profile)  
+### 对话
 
-### Models
+- `POST /api/v1/chat` — 同步回答  
+- `POST /api/v1/chat/stream` — SSE 流式（`status` / `delta` / `meta`）  
+- 通过 `sessionId` 续聊 + 服务端历史  
+- 响应字段：`answer`、`route`、`sources`、`degraded`、`degradedReasons`、`handoff`、`handoffReason`  
+
+### 知识
+
+- `dify`：Dataset retrieve + retrieve 失败时的 segment 降级  
+- `local`：PgVector 入库与检索  
+- `none`：不检索（如 mock）  
+
+### 模型
 
 - `csai.model-source=local|cloud`  
-- Roles: classifier, answer-strong, answer-fast  
-- Timeouts for classifier / answer / Dify HTTP  
+- 角色：classifier、answer-strong、answer-fast  
+- 分类 / 回答 / Dify HTTP 超时  
 
-### Security & resilience
+### 安全与韧性
 
-- Optional API keys (`X-API-Key` / Bearer), admin role for `/admin/**`  
-- Rate limiting (sliding window)  
-- Guardrails: system prompt, evidence policy, basic injection patterns  
-- Handoff policy  
+- 可选 API Key（`X-API-Key` / Bearer），`/admin/**` 需 ADMIN  
+- 滑动窗口限流  
+- 护栏：系统提示、依据策略、基础注入特征  
+- 转人工策略  
 
-### Ops
+### 运维
 
-- Flyway + schema ensure for ownership/audit columns  
-- Micrometer metrics (`csai.*`)  
-- Health indicator details  
-- Admin Thymeleaf UI (streaming chat console)  
-- Dockerfile, compose, smoke scripts  
+- Flyway + Schema 保障（归属/审计字段）  
+- Micrometer（`csai.*`）  
+- 健康指示器  
+- Admin Thymeleaf（流式对话台）  
+- Dockerfile、Compose、冒烟脚本  
 
 ---
 
-## 4. API summary
+## 4. API 摘要
 
-| Method | Path | Notes |
-|--------|------|-------|
-| GET | `/api/v1/ping` | Public |
-| GET | `/api/v1/runtime` | Active model/knowledge view |
-| POST | `/api/v1/chat` | Sync |
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/v1/ping` | 公开 |
+| GET | `/api/v1/runtime` | 当前模型/知识源 |
+| POST | `/api/v1/chat` | 同步 |
 | POST | `/api/v1/chat/stream` | SSE |
-| POST | `/api/v1/knowledge/search` | Retrieve snippets |
-| GET | `/admin/**` | Ops UI (ADMIN when security on) |
-| GET | `/actuator/health` | Health |
+| POST | `/api/v1/knowledge/search` | 检索片段 |
+| GET | `/admin/**` | 运维 UI（开安全时需 ADMIN） |
+| GET | `/actuator/health` | 健康 |
 
-JSON business APIs are wrapped by framework `ApiResponse` (`code` / `message` / `data`). SSE is not wrapped.
+业务 JSON 接口由框架包装为 `ApiResponse`（`code` / `message` / `data`）。SSE **不**包装。
 
 ---
 
-## 5. Configuration (see also configuration.md)
+## 5. 配置（详见 configuration.md）
 
-Key switches:
+关键开关：
 
 - `CS_AI_MODEL_SOURCE` — `local` \| `cloud`  
 - `CS_AI_KNOWLEDGE_PROVIDER` — `dify` \| `local` \| `none`  
-- `CSAI_SECURITY_ENABLED` — API key enforcement  
+- `CSAI_SECURITY_ENABLED` — API Key 强制  
 - `DIFY_BASE_URL` / `DIFY_API_KEY` / `DIFY_DATASET_ID`  
 
 ---
 
-## 6. Acceptance
+## 6. 验收
 
-Use [../acceptance/ACCEPTANCE.md](../acceptance/ACCEPTANCE.md).
+见 [../acceptance/ACCEPTANCE.md](../acceptance/ACCEPTANCE.md)。

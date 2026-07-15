@@ -1,99 +1,77 @@
-# Open Source Guide
+# 开源说明
 
-This repository is prepared for public GitHub hosting.
+本仓库面向 GitHub 公开托管。
 
-**Author / Copyright holder:** andy yang  
-**License:** Apache License 2.0 (see [LICENSE](../LICENSE) and [NOTICE](../NOTICE))
+| 项 | 值 |
+|----|-----|
+| 作者 / 版权 | **andy yang** |
+| 许可证 | Apache License 2.0（见 [LICENSE](../LICENSE)、[NOTICE](../NOTICE)） |
+| 默认文档语言 | **简体中文**（[README.md](../README.md)） |
+| 英文 README | [README.en.md](../README.en.md) |
 
-## What is published
+## 发布内容
 
-- Application source under `src/`
-- Scripts under `scripts/` (no secrets)
-- Documentation under `docs/`
-- Sample knowledge file under `samples/`
-- Docker / Compose packaging
-- Community files: CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, CHANGELOG
+- `src/` 应用源码  
+- `scripts/` 脚本（不含密钥）  
+- `docs/` 中文文档  
+- `samples/` 示例知识文本  
+- Docker / Compose  
+- 社区文件：CONTRIBUTING、CODE_OF_CONDUCT、SECURITY、CHANGELOG  
 
-## What must never be published
+## 禁止发布
 
-- `.env` (gitignored)
-- Real API keys, Dataset tokens, cloud credentials
-- Model weight files (`*.gguf`)
-- Private infrastructure hostnames/passwords
+- `.env`（已 gitignore）  
+- 真实 API Key、Dataset Token、云凭证  
+- 模型权重（`*.gguf`）  
+- 私有基础设施主机名与密码  
 
-## Maintainer identity
+## 维护者身份
 
-All project authorship for this open-source release is attributed to:
+开源署名统一为：
 
 ```text
 andy yang
 ```
 
-Do not use Chinese legal names or private machine hostnames in commits or docs.
-
-Recommended local Git config for this repository:
+推荐本仓库本地 Git 配置：
 
 ```bash
 git config user.name "andy yang"
 git config user.email "YOUR_PUBLIC_GITHUB_NOREPLY@users.noreply.github.com"
 ```
 
-If historical commits contain other author names, rewrite history **before the first public push**:
+## 建议的 GitHub 设置
 
-```bash
-git filter-branch -f --env-filter '
-export GIT_AUTHOR_NAME="andy yang"
-export GIT_AUTHOR_EMAIL="YOUR_PUBLIC_GITHUB_NOREPLY@users.noreply.github.com"
-export GIT_COMMITTER_NAME="andy yang"
-export GIT_COMMITTER_EMAIL="YOUR_PUBLIC_GITHUB_NOREPLY@users.noreply.github.com"
-' -- --all
+1. 公开仓库 `customer-service-ai`  
+2. 开启 Issues（可选 Discussions）  
+3. 开启 Private vulnerability reporting  
+4. 保护 `main` 分支  
+5. Topics：`spring-ai`、`java`、`dify`、`rag`、`customer-service`、`openai-compatible`  
+6. 描述示例：  
+
+   > 基于 Spring AI 的企业智能客服编排：可插拔本地/云端大模型，Dify 知识检索。
+
+## 仓库地址（已发布）
+
+```text
+https://github.com/andy-library/customer-service-ai
 ```
 
-(Or use `git filter-repo` if available.)
+## 社区阅读路径
 
-## Suggested GitHub repository settings
-
-1. Create repository (example name: `customer-service-ai`)
-2. Enable Issues + Discussions (optional)
-3. Enable private vulnerability reporting
-4. Protect `main` with required CI checks
-5. Add topics: `spring-ai`, `java`, `dify`, `rag`, `customer-service`, `openai-compatible`
-6. Set description:
-
-   > Enterprise intelligent customer service orchestration with Spring AI, pluggable local/cloud LLMs, and Dify knowledge retrieval.
-
-## First publish checklist
-
-- [ ] `git status` clean; no `.env`
-- [ ] Author name is **andy yang** for release commits
-- [ ] `README.md` clone URL matches your GitHub path
-- [ ] `pom.xml` `<url>` / `<scm>` match your GitHub path
-- [ ] CI green or documented as “requires private parent install”
-- [ ] Tag `v0.2.0-rc.1` after push
-
-```bash
-git remote add origin git@github.com:YOUR_ORG/customer-service-ai.git
-git push -u origin main
-git tag -a v0.2.0-rc.1 -m "v0.2.0-rc.1"
-git push origin v0.2.0-rc.1
-```
-
-## Community reading path
-
-1. [README.md](../README.md)  
+1. [README.md](../README.md)（中文主页）  
 2. [getting-started.md](getting-started.md)  
 3. [architecture.md](architecture.md)  
 4. [configuration.md](configuration.md)  
 5. [operations/RUNBOOK.md](operations/RUNBOOK.md)  
-6. [requirements/PRD.md](requirements/PRD.md)
+6. [requirements/PRD.md](requirements/PRD.md)  
 
-## Dependency note
+## 依赖说明
 
-Runtime parent `microservice-framework-starter-parent` may be private to your org.
-Open-source consumers must either:
+运行时 Parent `microservice-framework-starter-parent` 可能仅在组织内可解析。开源使用者可：
 
-- Install it from your published Maven coordinates, or  
-- Use `scripts/install-framework.sh` if the source is available, or  
-- Fork and adapt the parent to public Spring Boot BOM only (contribution welcome).
+- 从已发布的 Maven 坐标安装；或  
+- 执行 `scripts/install-framework.sh`（若源码可得）；或  
+- Fork 后改为公共 Spring Boot BOM（欢迎贡献）  
 
-Document your chosen approach in the repository description when publishing.
+请在仓库说明中写清你们的解析方式。

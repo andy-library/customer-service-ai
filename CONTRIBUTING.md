@@ -1,82 +1,78 @@
-# Contributing
+# 贡献指南
 
-Thank you for your interest in **customer-service-ai**.
+感谢关注 **customer-service-ai**。
 
-Maintainer / author: **andy yang**
+维护者：**andy yang**
 
-## Ways to contribute
+> English version: [CONTRIBUTING.en.md](CONTRIBUTING.en.md)
 
-- Report bugs and propose features via GitHub Issues
-- Improve documentation and samples
-- Submit pull requests for bug fixes and well-scoped features
-- Share deployment notes for different model backends (llama.cpp, cloud providers, Dify)
+## 如何贡献
 
-## Development setup
+- 通过 GitHub Issues 报告缺陷、提出需求  
+- 改进文档与示例  
+- 提交聚焦的 Pull Request（修 bug / 小范围特性）  
+- 分享不同模型后端（llama.cpp、云厂商、Dify）的部署经验  
 
-1. **Prerequisites**
-   - OpenJDK 21+
-   - Maven 3.9+
-   - Docker (PostgreSQL / optional full stack)
-   - Optional: local llama.cpp and/or Dify for real-model tests
+## 开发环境
 
-2. **Install the framework parent** (first time)
+1. **依赖**  
+   - OpenJDK 21+  
+   - Maven 3.9+  
+   - Docker（PostgreSQL）  
+   - 可选：本机 llama.cpp、Dify  
+
+2. **安装框架 Parent（首次）**
 
    ```bash
    ./scripts/install-framework.sh
    ```
 
-3. **Run tests (offline mock path)**
+3. **测试**
 
    ```bash
    mvn test
    ```
 
-4. **Run the app**
+4. **运行**
 
    ```bash
    docker compose up -d postgres
    cp .env.example .env
-   # edit .env as needed
    set -a && source .env && set +a
    mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
    ```
 
-See [docs/getting-started.md](docs/getting-started.md) for full options.
+详见 [docs/getting-started.md](docs/getting-started.md)。
 
-## Coding guidelines
+## 编码约定
 
-- Keep Boot version aligned with `microservice-framework` (do not upgrade Spring Boot casually)
-- Prefer ports/adapters for external systems (models, knowledge)
-- Do not commit secrets (`.env`, API keys, tokens)
-- Add or update unit tests for behavior changes
-- Keep public API (`/api/v1/**`) backward compatible when possible; document breaking changes in `CHANGELOG.md`
-- Author metadata in contributions should use the name **andy yang** only when acting as project maintainer commits; community contributors use their own GitHub identity
+- 与 `microservice-framework` 锁定的 Boot 版本保持一致，勿随意升级 Boot  
+- 外部系统（模型、知识库）优先通过端口/适配器接入  
+- 禁止提交密钥（`.env`、API Key、Token）  
+- 行为变更请补充/更新单元测试  
+- 尽量保持 `/api/v1` 兼容；破坏性变更写入 `CHANGELOG.md`  
 
-## Pull request process
+## Pull Request
 
-1. Fork and create a feature branch
-2. Make focused commits with clear messages
-3. Ensure `mvn test` passes
-4. Open a PR with:
-   - What changed and why
-   - How to test
-   - Linked issue (if any)
-5. Be responsive to review feedback
+1. Fork 并创建功能分支  
+2. 提交信息清晰、改动聚焦  
+3. 确保 `mvn test` 通过  
+4. PR 说明：改了什么、为何改、如何验证、关联 Issue  
 
-## Issue reports
+## Issue 报告
 
-Please include:
+请尽量包含：
 
-- Version / commit
-- Runtime (local / docker / k8s)
-- Model backend (local/cloud) and knowledge provider (dify/local/none)
-- Steps to reproduce
-- Logs (redact secrets)
+- 版本 / commit  
+- 运行环境（本机 / Docker / K8s）  
+- 模型源（local/cloud）与知识提供方（dify/local/none）  
+- 复现步骤  
+- 日志（务必脱敏）  
 
-## Security issues
+## 安全问题
 
-Do **not** open public issues for vulnerabilities. See [SECURITY.md](SECURITY.md).
+**不要**公开提 Issue。见 [SECURITY.md](SECURITY.md)。
 
-## License
+## 许可证
 
-By contributing, you agree that your contributions will be licensed under the **Apache License 2.0**.
+贡献代码即表示同意以 **Apache License 2.0** 授权。

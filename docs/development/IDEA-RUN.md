@@ -1,6 +1,6 @@
 # IntelliJ IDEA 启动配置
 
-Author: **andy yang**
+作者：**andy yang**
 
 本文说明如何在本地 IntelliJ IDEA 中启动 **customer-service-ai** 做开发验证。
 

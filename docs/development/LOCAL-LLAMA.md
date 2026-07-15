@@ -1,19 +1,19 @@
-# 全本地 llama.cpp 部署指南（Mac M1 64GB）
+# 本地 llama.cpp 部署指南
 
-面向 **customer-service-ai**：Chat + Embedding 均走本机 `llama-server`（OpenAI 兼容），Postgres+PgVector 仍用 Docker。
+作者：**andy yang**
 
-## 0. 本机盘点结果
+面向 **customer-service-ai**：Chat（及可选 Embedding）走本机 `llama-server`（OpenAI 兼容协议），PostgreSQL 仍建议 Docker 部署。
 
-| 项 | 现状 |
+## 0. 适用说明
+
+| 项 | 建议 |
 |----|------|
-| 机器 | Mac M1，统一内存 64GB |
-| llama.cpp | Homebrew `llama-server`（已装） |
-| 模型目录 | `$HOME/LocalModels` |
-| 已有对话模型 | **Qwen3.6-35B-A3B**（IQ2_M 11G / Q6 29G / Q8 41G）、Qwythos 9B、Gemma4 31B |
-| 已有向量模型 | **无**（需下载） |
-| 现有启动器 | `LocalModels/start-mac.sh`（默认 8080，交互式） |
+| 操作系统 | macOS / Linux（需能运行 `llama-server`） |
+| 模型目录 | `$HOME/LocalModels`（可用 `MODEL_DIR` 覆盖） |
+| 对话模型示例 | Qwen3 系列 GGUF 等 |
+| 向量模型示例 | bge-m3 / Qwen3-Embedding（仅 `knowledge.provider=local` 时需要） |
 
-**优先 Qwen：** 客服用 **Qwen3.6-35B-A3B** 做 Chat；Embedding 建议 **Qwen3-Embedding** 或 **bge-m3**（见下）。
+**推荐：** 客服对话用质量与速度平衡的量化版 Chat 模型；Embedding 与 Chat **分端口**部署。
 
 ---
 

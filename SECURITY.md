@@ -1,46 +1,49 @@
-# Security Policy
+# 安全策略
 
-## Supported versions
+作者：**andy yang**
 
-| Version       | Supported          |
-|---------------|--------------------|
-| 0.2.x-rc      | Yes (active)       |
-| 0.1.x         | Limited (security fixes case-by-case) |
-| < 0.1         | No                 |
+> English version: [SECURITY.en.md](SECURITY.en.md)
 
-## Reporting a vulnerability
+## 支持的版本
 
-Please **do not** create public GitHub issues for security vulnerabilities.
+| 版本 | 支持 |
+|------|------|
+| 0.2.x-rc | 是（当前） |
+| 0.1.x | 有限（按需安全修复） |
+| < 0.1 | 否 |
 
-Prefer one of:
+## 报告漏洞
 
-1. GitHub **Security Advisories** (private) on this repository when available
-2. Email the maintainer: **andy yang** via the GitHub profile contact linked from the repository owner account
+请**不要**通过公开 GitHub Issue 报告安全漏洞。
 
-Include:
+优先方式：
 
-- Description and impact
-- Reproduction steps / PoC (if available)
-- Affected version / commit
-- Suggested fix (optional)
+1. 仓库开启时的 GitHub **Security Advisories**（私密）  
+2. 通过 GitHub 维护者账号 **andy yang / andy-library** 私信或私密渠道联系  
 
-You should receive an acknowledgement within **7 days**. We will coordinate a
-fix and disclosure timeline with you.
+请包含：
 
-## Security features in this project
+- 问题描述与影响范围  
+- 复现步骤 / PoC（如有）  
+- 影响版本 / commit  
+- 修复建议（可选）  
 
-- Optional API Key authentication (`CSAI_SECURITY_ENABLED=true`)
-- Role separation for Admin vs Client
-- Rate limiting
-- Session ownership checks
-- Input guardrails (basic injection patterns)
-- Secret values should only live in environment variables / secret managers
+一般在 **7 天内**确认收到，并与你协调修复与披露时间。
 
-## Hardening checklist for production
+## 本项目已有安全能力
 
-1. Enable `CSAI_SECURITY_ENABLED=true` and use strong random API keys
-2. Do not expose Admin UI to the public internet without additional protection
-3. Terminate TLS at a reverse proxy / ingress
-4. Restrict network access to Dify, model endpoints, and PostgreSQL
-5. Rotate keys regularly; never commit `.env`
-6. Review rate limits and model timeouts for your capacity
+- 可选 API Key 鉴权（`CSAI_SECURITY_ENABLED=true`）  
+- Admin / Client 角色分离  
+- 限流  
+- 会话归属校验  
+- 基础提示注入特征拦截  
+- 密钥仅应存在于环境变量 / 密钥管理服务  
+
+## 生产加固清单
+
+1. 开启 `CSAI_SECURITY_ENABLED=true`，使用强随机 Key  
+2. 管理台勿对公网裸暴露  
+3. 在反向代理终止 TLS  
+4. 限制 Dify、模型端点、PostgreSQL 网络访问  
+5. 定期轮换密钥；永不提交 `.env`  
+6. 按容量调整限流与超时  

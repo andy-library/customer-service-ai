@@ -1,42 +1,44 @@
-# Documentation
+# 文档索引
 
-Author / maintainer: **andy yang**
+作者 / 维护者：**andy yang**
 
-Canonical docs for **customer-service-ai** (aligned with code at `0.2.0-rc.1`).
+本目录为 **customer-service-ai**（`0.2.0-rc.1`）的**中文文档**（与代码实现一致）。
 
-## Start here
+> 项目默认文档语言为**简体中文**。英文 README 见仓库根目录 [README.en.md](../README.en.md)。
 
-| Document | Description |
-|----------|-------------|
-| [../README.md](../README.md) | English overview & quick start |
-| [../README.zh-CN.md](../README.zh-CN.md) | 简体中文说明 |
-| [getting-started.md](getting-started.md) | Install, configure, run |
-| [architecture.md](architecture.md) | System architecture (design of record) |
-| [configuration.md](configuration.md) | Environment variables & profiles |
-| [operations/RUNBOOK.md](operations/RUNBOOK.md) | Operations handbook |
-| [OPENSOURCE.md](OPENSOURCE.md) | Publish checklist |
+## 入门
 
-## Product & acceptance
+| 文档 | 说明 |
+|------|------|
+| [../README.md](../README.md) | 项目主页（中文，默认） |
+| [../README.en.md](../README.en.md) | Project homepage (English) |
+| [getting-started.md](getting-started.md) | 安装、配置与启动 |
+| [architecture.md](architecture.md) | 系统架构（设计说明） |
+| [configuration.md](configuration.md) | 环境变量与 Profile |
+| [operations/RUNBOOK.md](operations/RUNBOOK.md) | 运维手册 |
+| [OPENSOURCE.md](OPENSOURCE.md) | 开源发布说明 |
 
-| Document | Description |
-|----------|-------------|
-| [requirements/PRD.md](requirements/PRD.md) | Product requirements (implemented scope) |
-| [acceptance/ACCEPTANCE.md](acceptance/ACCEPTANCE.md) | Acceptance checklist |
+## 产品与验收
 
-## Integration & development
+| 文档 | 说明 |
+|------|------|
+| [requirements/PRD.md](requirements/PRD.md) | 产品需求（已实现范围） |
+| [acceptance/ACCEPTANCE.md](acceptance/ACCEPTANCE.md) | 验收清单 |
 
-| Document | Description |
-|----------|-------------|
-| [development/DIFY-AND-MODELS.md](development/DIFY-AND-MODELS.md) | Dify knowledge + local/cloud models |
-| [development/LOCAL-LLAMA.md](development/LOCAL-LLAMA.md) | Local llama.cpp setup |
-| [development/BAILIAN-GLM.md](development/BAILIAN-GLM.md) | Bailian / OpenAI-compatible cloud |
-| [development/IDEA-RUN.md](development/IDEA-RUN.md) | IntelliJ IDEA run configurations |
+## 集成与开发
 
-## Community
+| 文档 | 说明 |
+|------|------|
+| [development/DIFY-AND-MODELS.md](development/DIFY-AND-MODELS.md) | Dify 知识库与本地/云端模型 |
+| [development/LOCAL-LLAMA.md](development/LOCAL-LLAMA.md) | 本地 llama.cpp 部署 |
+| [development/BAILIAN-GLM.md](development/BAILIAN-GLM.md) | 阿里云百炼 / OpenAI 兼容接入 |
+| [development/IDEA-RUN.md](development/IDEA-RUN.md) | IntelliJ IDEA 启动配置 |
 
-| Document | Description |
-|----------|-------------|
-| [../CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute |
-| [../SECURITY.md](../SECURITY.md) | Vulnerability reporting |
-| [../CHANGELOG.md](../CHANGELOG.md) | Release notes |
+## 社区
+
+| 文档 | 说明 |
+|------|------|
+| [../CONTRIBUTING.md](../CONTRIBUTING.md) | 贡献指南 |
+| [../SECURITY.md](../SECURITY.md) | 安全披露 |
+| [../CHANGELOG.md](../CHANGELOG.md) | 版本变更 |
 | [../LICENSE](../LICENSE) | Apache License 2.0 |

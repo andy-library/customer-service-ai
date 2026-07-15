@@ -1,106 +1,108 @@
-# Configuration Reference
+# 配置参考
 
-Author: **andy yang**
+作者：**andy yang**
 
-Configuration is driven by Spring Boot + `csai.*` properties. Prefer environment variables (see `.env.example`).
+配置由 Spring Boot 与 `csai.*` 属性驱动。推荐使用环境变量（见 `.env.example`）。
 
-## Profiles
+## Profile
 
-| Profile | Purpose |
-|---------|---------|
-| (default) | Local / real models |
-| `mock` | Offline CI: deterministic models, no external LLM |
-| `prod` | Forces security on; conservative timeouts |
+| Profile | 用途 |
+|---------|------|
+| （默认） | 本地 / 真实模型 |
+| `mock` | 离线 CI：确定性模型，无外部 LLM |
+| `prod` | 强制开启安全；偏保守超时 |
 
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=prod
 ```
 
-## Core environment variables
+## 核心环境变量
 
-### Database
+### 数据库
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DB_HOST` | `localhost` | PostgreSQL host |
-| `DB_PORT` | `5432` | Port |
-| `DB_NAME` | `csai` | Database |
-| `DB_USER` | `csai` | User |
-| `DB_PASSWORD` | `csai` | Password |
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `DB_HOST` | `localhost` | PostgreSQL 主机 |
+| `DB_PORT` | `5432` | 端口 |
+| `DB_NAME` | `csai` | 库名 |
+| `DB_USER` | `csai` | 用户 |
+| `DB_PASSWORD` | `csai` | 密码 |
 
-### Model source
+### 模型源
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CS_AI_MODEL_SOURCE` | `local` | `local` or `cloud` |
-| `CS_AI_DEFAULT_BASE_URL` | local llama URL | OpenAI-compatible base (`.../v1`) |
-| `CS_AI_DEFAULT_API_KEY` | `sk-local` | API key for chat endpoints |
-| `CS_AI_CLASSIFIER_MODEL` | `local-qwen` | Classifier model name |
-| `CS_AI_ANSWER_STRONG_MODEL` | `local-qwen` | Strong answer model |
-| `CS_AI_ANSWER_FAST_MODEL` | `local-qwen` | Fast answer model |
-| `CS_AI_EMBEDDING_*` | local embed | Used when knowledge=`local` |
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `CS_AI_MODEL_SOURCE` | `local` | `local` 或 `cloud` |
+| `CS_AI_DEFAULT_BASE_URL` | 本机 llama | OpenAI 兼容 Base（`.../v1`） |
+| `CS_AI_DEFAULT_API_KEY` | `sk-local` | Chat 端点密钥 |
+| `CS_AI_CLASSIFIER_MODEL` | `local-qwen` | 分类模型名 |
+| `CS_AI_ANSWER_STRONG_MODEL` | `local-qwen` | 强回答模型 |
+| `CS_AI_ANSWER_FAST_MODEL` | `local-qwen` | 快回答模型 |
+| `CS_AI_EMBEDDING_*` | 本机 embed | 仅 `knowledge=local` 时需要 |
 
-### Cloud (when `CS_AI_MODEL_SOURCE=cloud`)
+### 云端（`CS_AI_MODEL_SOURCE=cloud`）
 
-| Variable | Description |
-|----------|-------------|
-| `CS_AI_CLOUD_BASE_URL` | e.g. Bailian `compatible-mode/v1` |
-| `CS_AI_CLOUD_API_KEY` | Cloud API key |
-| `CS_AI_CLOUD_*_MODEL` | Classifier / answer models |
+| 变量 | 说明 |
+|------|------|
+| `CS_AI_CLOUD_BASE_URL` | 如百炼 `compatible-mode/v1` |
+| `CS_AI_CLOUD_API_KEY` | 云端 API Key |
+| `CS_AI_CLOUD_*_MODEL` | 分类 / 回答模型名 |
 
-### Knowledge (Dify)
+### 知识库（Dify）
 
-| Variable | Description |
-|----------|-------------|
+| 变量 | 说明 |
+|------|------|
 | `CS_AI_KNOWLEDGE_PROVIDER` | `dify` / `local` / `none` |
-| `DIFY_BASE_URL` | Dataset API prefix ending with `/v1` |
-| `DIFY_API_KEY` | Dataset API key |
-| `DIFY_DATASET_ID` | Dataset UUID |
-| `DIFY_SEARCH_METHOD` | e.g. `semantic_search` |
-| `DIFY_SEGMENT_FALLBACK` | `true` recommended on Dify RC |
+| `DIFY_BASE_URL` | Dataset API 前缀，以 `/v1` 结尾 |
+| `DIFY_API_KEY` | Dataset API Key |
+| `DIFY_DATASET_ID` | 知识库 UUID |
+| `DIFY_SEARCH_METHOD` | 如 `semantic_search` |
+| `DIFY_SEGMENT_FALLBACK` | Dify RC 建议 `true` |
 
-### Security
+### 安全
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CSAI_SECURITY_ENABLED` | `false` | Enable API key filter |
-| `CSAI_API_KEY_CLIENT` | dev default | Client role key |
-| `CSAI_API_KEY_ADMIN` | dev default | Admin + client roles |
-| `CSAI_RATE_LIMIT_ENABLED` | `true` | Rate limit filter |
-| `CSAI_RATE_LIMIT_RPM` | `120` | Requests per minute per principal |
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `CSAI_SECURITY_ENABLED` | `false` | 启用 API Key 过滤器 |
+| `CSAI_API_KEY_CLIENT` | 开发占位 | 客户端角色 |
+| `CSAI_API_KEY_ADMIN` | 开发占位 | 管理员 + 客户端 |
+| `CSAI_RATE_LIMIT_ENABLED` | `true` | 限流 |
+| `CSAI_RATE_LIMIT_RPM` | `120` | 每主体每分钟请求数 |
 
-### Resilience & routing
+> 不要写 `CSAI_API_KEY_CLIENT=`（空串会覆盖默认值）；不需要时请注释掉。
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CSAI_CLASSIFIER_TIMEOUT_MS` | `90000` | Classifier timeout |
-| `CSAI_ANSWER_TIMEOUT_MS` | `180000` | Answer timeout |
-| `CSAI_DIFY_TIMEOUT_MS` | `8000` | Dify HTTP timeout |
-| `CSAI_CONFIDENCE_THRESHOLD` | `0.55` | Below → handoff |
-| `CSAI_HANDOFF_ON_UNKNOWN` | `true` | Handoff on UNKNOWN intent |
-| `CSAI_REQUIRE_EVIDENCE` | `true` | Empty RAG → insufficient evidence reply |
+### 韧性与路由
 
-## HTTP headers
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `CSAI_CLASSIFIER_TIMEOUT_MS` | `90000` | 分类超时 |
+| `CSAI_ANSWER_TIMEOUT_MS` | `180000` | 回答超时 |
+| `CSAI_DIFY_TIMEOUT_MS` | `8000` | Dify HTTP 超时 |
+| `CSAI_CONFIDENCE_THRESHOLD` | `0.55` | 低于则转人工 |
+| `CSAI_HANDOFF_ON_UNKNOWN` | `true` | UNKNOWN 意图转人工 |
+| `CSAI_REQUIRE_EVIDENCE` | `true` | RAG 空则「依据不足」 |
+
+## HTTP 请求头
 
 ```http
 X-API-Key: <client-or-admin-key>
-# or
+# 或
 Authorization: Bearer <client-or-admin-key>
 ```
 
-## Important paths
+## 重要路径
 
-| Path | Notes |
-|------|-------|
-| `GET /actuator/health` | Public |
-| `GET /api/v1/ping` | Public |
-| `POST /api/v1/chat` | Auth when security enabled |
-| `POST /api/v1/chat/stream` | SSE |
-| `GET /api/v1/runtime` | Active model/knowledge view |
-| `/admin/**` | Requires `ADMIN` role when security enabled |
+| 路径 | 说明 |
+|------|------|
+| `GET /actuator/health` | 公开 |
+| `GET /api/v1/ping` | 公开 |
+| `POST /api/v1/chat` | 开启安全时需鉴权 |
+| `POST /api/v1/chat/stream` | SSE 流式 |
+| `GET /api/v1/runtime` | 当前模型/知识源视图 |
+| `/admin/**` | 开启安全时需 `ADMIN` 角色 |
 
-## Secrets hygiene
+## 密钥安全
 
-- Never commit `.env`
-- Rotate keys before production
-- Prefer a secret manager in cloud deployments
+- 切勿提交 `.env`  
+- 上线前轮换密钥  
+- 云上优先使用密钥管理服务  

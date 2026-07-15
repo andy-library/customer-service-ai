@@ -1,6 +1,6 @@
 # 运维手册 — customer-service-ai 0.2.0-rc
 
-Maintainer: **andy yang**
+维护者：**andy yang**
 
 ## 1. 组件依赖
 

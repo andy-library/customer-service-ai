@@ -1,110 +1,110 @@
-# Architecture Overview
+# 系统架构
 
-Author: **andy yang**
+作者：**andy yang**
 
-## Purpose
+## 定位
 
-**customer-service-ai** is a **modular monolith** that orchestrates enterprise customer-service conversations:
+**customer-service-ai** 是模块化单体应用，负责企业智能客服对话编排：
 
-1. Authenticate and rate-limit callers  
-2. Classify user intent with an LLM  
-3. Select an answer model by policy  
-4. Retrieve knowledge (Dify by default)  
-5. Generate grounded answers with sources  
-6. Persist session, route logs, and audit events  
-7. Expose metrics and health for operations  
+1. 调用方鉴权与限流  
+2. LLM 意图分类  
+3. 按策略选择回答模型  
+4. 检索企业知识（默认 Dify）  
+5. 生成可引用 sources 的回答  
+6. 持久化会话、路由日志与审计  
+7. 暴露指标与健康检查  
 
-It is **not** a full ticketing system or multi-channel hub. It is the **AI orchestration layer**.
+本项目**不是**完整工单系统或多渠道中台，而是 **AI 编排层**。
 
-## High-level diagram
+## 逻辑架构
 
 ```
                  ┌──────────────────────────────┐
-                 │  Clients / BFF / API Gateway │
+                 │  客户端 / BFF / API Gateway   │
                  └──────────────┬───────────────┘
                                 │  X-API-Key / Bearer
                  ┌──────────────▼───────────────┐
                  │     customer-service-ai      │
-                 │  REST + SSE + Admin (Thymeleaf)
+                 │  REST + SSE + Admin(Thymeleaf)
                  │                              │
-                 │  security · rate limit       │
-                 │  router · guardrail · handoff│
-                 │  chat orchestrator           │
-                 │  metrics · audit · sessions  │
+                 │  安全 · 限流                 │
+                 │  路由 · 护栏 · 转人工        │
+                 │  对话编排                    │
+                 │  指标 · 审计 · 会话          │
                  └───┬───────────────────┬──────┘
                      │                   │
-          OpenAI-compatible LLM    Knowledge provider
-          (local llama / cloud)    (Dify / local PgVector / none)
+          OpenAI 兼容 LLM           知识提供方
+          (本机 llama / 云端)      (Dify / 本地向量 / 无)
                      │                   │
                   PostgreSQL ◄───────────┘
-                  (sessions, logs, audit)
+                  (会话、日志、审计)
 ```
 
-## Modules (package layout)
+## 模块包结构
 
 ```
 com.enterprise.csai
-├── admin            # Thymeleaf ops UI
-├── audit            # Audit persistence
-├── chat             # Orchestration, sessions, messages
-├── common           # Config, errors, schema helpers
+├── admin            # Thymeleaf 运维界面
+├── audit            # 审计落库
+├── chat             # 编排、会话、消息
+├── common           # 配置、错误码、Schema 保障
 ├── domain
-│   ├── policy       # Guardrail, handoff
-│   └── port         # KnowledgePort, ModelPort
-├── knowledge        # Dify / local / none retrievers
-├── modelgateway     # Multi-model registry & OpenAI clients
-├── observability    # Metrics & health
-├── router           # Intent classification
-└── security         # API key & rate limit filters
+│   ├── policy       # 护栏、转人工策略
+│   └── port         # KnowledgePort、ModelPort
+├── knowledge        # Dify / local / none 检索
+├── modelgateway     # 多模型注册与 OpenAI 客户端
+├── observability    # Metrics 与健康指示
+├── router           # 意图分类
+└── security         # API Key 与限流过滤器
 ```
 
-## Request lifecycle (chat)
+## 对话主链路
 
 ```
-POST /api/v1/chat            (sync)
-POST /api/v1/chat/stream     (SSE: status / delta / meta)
-  → ApiKeyAuthFilter (optional)
+POST /api/v1/chat            （同步）
+POST /api/v1/chat/stream     （SSE：status / delta / meta）
+  → ApiKeyAuthFilter（可选）
   → RateLimitFilter
   → ChatOrchestrator
-       → GuardrailPolicy (injection / evidence)
-       → RoutingService (classifier model)
-       → HandoffPolicy (optional short-circuit)
-       → KnowledgePort.search (if RAG needed)
-       → ModelPort.chat / stream (answer model)
-       → Persist session/messages/route/audit
-       → Return answer + route + sources + degraded/handoff
+       → GuardrailPolicy（注入检测 / 依据策略）
+       → RoutingService（分类模型）
+       → HandoffPolicy（可选短路转人工）
+       → KnowledgePort.search（需要 RAG 时）
+       → ModelPort.chat / stream（回答模型）
+       → 持久化会话 / 消息 / 路由 / 审计
+       → 返回 answer + route + sources + degraded/handoff
 ```
 
-Admin UI (`/admin/chat`) uses the streaming endpoint for token-by-token display.
+管理台 `/admin/chat` 使用流式接口，实现 token 级输出。
 
-## Pluggable backends
+## 可插拔后端
 
-| Concern | Config key | Options |
-|---------|------------|---------|
-| Model source | `csai.model-source` | `local`, `cloud` |
-| Knowledge | `csai.knowledge.provider` | `dify`, `local`, `none` |
-| Security | `csai.security.enabled` | `true` / `false` |
+| 关注点 | 配置键 | 选项 |
+|--------|--------|------|
+| 模型源 | `csai.model-source` | `local`、`cloud` |
+| 知识库 | `csai.knowledge.provider` | `dify`、`local`、`none` |
+| 安全 | `csai.security.enabled` | `true` / `false` |
 
-Switching model source reloads the registry at process start (restart required).
+切换模型源后需**重启进程**（启动时加载 Registry）。
 
-## Resilience & degradation
+## 韧性与降级
 
-- Timeouts for classifier, answer, and Dify HTTP calls  
-- Dify retrieve failures can fall back to segment listing + keyword score  
-- Responses expose `degraded` and `degradedReasons`  
-- Classifier outage degrades to `UNKNOWN` without forcing handoff  
+- 分类、回答、Dify HTTP 均有超时  
+- Dify retrieve 失败可走 segment 列表 + 关键词打分降级  
+- 响应暴露 `degraded` / `degradedReasons`  
+- 分类器故障降级为 `UNKNOWN`，不强制转人工  
 
-## Data stores
+## 数据存储
 
-| Store | Usage |
-|-------|--------|
-| PostgreSQL | Sessions, messages, route logs, audit, optional local doc metadata |
-| PgVector | Only when `knowledge.provider=local` |
-| Dify | Primary enterprise knowledge index |
+| 存储 | 用途 |
+|------|------|
+| PostgreSQL | 会话、消息、路由日志、审计、可选本地文档元数据 |
+| PgVector | 仅当 `knowledge.provider=local` |
+| Dify | 企业知识主索引 |
 
-## Related docs
+## 相关文档
 
-- Product requirements: [requirements/PRD.md](requirements/PRD.md)
-- Configuration: [configuration.md](configuration.md)
-- Operations: [operations/RUNBOOK.md](operations/RUNBOOK.md)
-- Dify & models: [development/DIFY-AND-MODELS.md](development/DIFY-AND-MODELS.md)
+- 产品需求：[requirements/PRD.md](requirements/PRD.md)  
+- 配置：[configuration.md](configuration.md)  
+- 运维：[operations/RUNBOOK.md](operations/RUNBOOK.md)  
+- Dify 与模型：[development/DIFY-AND-MODELS.md](development/DIFY-AND-MODELS.md)  

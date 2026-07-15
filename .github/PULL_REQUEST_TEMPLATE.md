@@ -1,23 +1,23 @@
-## Summary
+## 变更摘要
 
-Briefly describe what this PR does.
+简要说明本 PR 做了什么。
 
-## Type of change
+## 变更类型
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Documentation
-- [ ] Refactor / chore
-- [ ] Breaking change (describe in CHANGELOG)
+- [ ] 缺陷修复
+- [ ] 新功能
+- [ ] 文档
+- [ ] 重构 / 杂项
+- [ ] 破坏性变更（请更新 CHANGELOG）
 
-## How to test
+## 如何验证
 
 1.
 2.
 
-## Checklist
+## 检查清单
 
-- [ ] `mvn test` passes
-- [ ] Docs updated if needed
-- [ ] No secrets committed
-- [ ] CHANGELOG updated for user-facing changes
+- [ ] `mvn test` 通过
+- [ ] 需要时已更新中文文档
+- [ ] 未提交密钥
+- [ ] 用户可见变更已写入 CHANGELOG
