@@ -8,7 +8,8 @@ Canonical docs for **customer-service-ai** (aligned with code at `0.2.0-rc.1`).
 
 | Document | Description |
 |----------|-------------|
-| [../README.md](../README.md) | Project overview & quick start |
+| [../README.md](../README.md) | English overview & quick start |
+| [../README.zh-CN.md](../README.zh-CN.md) | 简体中文说明 |
 | [getting-started.md](getting-started.md) | Install, configure, run |
 | [architecture.md](architecture.md) | System architecture (design of record) |
 | [configuration.md](configuration.md) | Environment variables & profiles |
