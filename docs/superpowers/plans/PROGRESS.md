@@ -3,7 +3,7 @@
 | 字段 | 值 |
 |------|-----|
 | 分支 | `feat/csai-mvp` |
-| 当前 | **Dify 知识库 + 本地/云端可插拔模型已落地** |
+| 当前 | **E2E 冒烟已通过：local-qwen + Dify 知识库** |
 | 机器 | Mac M1 64G；本机 llama Chat **:18080** `local-qwen`，Embed **:18081** `local-bge-m3` (dim 1024) |
 | 知识库 | **Dify**（`csai.knowledge.provider=dify`）；Spring 只调用 Dataset retrieve |
 | 模型切换 | `CS_AI_MODEL_SOURCE=local\|cloud`（启动时解析，改后重启） |
@@ -65,3 +65,13 @@
 - [x] application.yml 默认对齐 18080/18081 + local-qwen / local-bge-m3
 - [x] RuntimeConfigController `/api/v1/runtime`
 - [x] 单测：Dify 解析、ActiveModelProfileResolver
+- [x] E2E 冒烟：knowledge search + chat（intent=BILLING, rag, sources, 正确回答退款政策）
+- [x] Dify 1.16.0-rc1 `/retrieve` 有命中时 500 → 已实现 **segment-fallback** 降级
+- [x] `scripts/dify-port-forward.sh` + `scripts/smoke-e2e.sh`
+
+## 已知问题
+
+| 问题 | 处理 |
+|------|------|
+| Dify 1.16.0-rc1 Dataset retrieve：向量命中后序列化抛 SQLAlchemy closed transaction | Spring 侧 `segment-fallback=true`（默认）；升级 Dify 稳定版后可关 |
+| 知识库原为空 | 已通过 API 导入 `samples/refund-policy.md` 作为冒烟语料 |
