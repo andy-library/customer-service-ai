@@ -33,9 +33,9 @@
 /Users/andy.yang/LocalModels/Qwen3.6-35B-A3B/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf
 ```
 
-- **端口：** `8082`  
-- **API model 名（alias）：** `qwen3.6-35b`  
-- **ctx：** 客服+RAG 建议 `16384`（内存紧用 `8192`）
+- **端口：** **`18080`**（与 `application.yml` / 本机实测一致；旧文档 8082 已废弃）  
+- **API model 名（alias）：** **`local-qwen`**  
+- **ctx：** 客服建议 `16384`～`32768`（视内存与量化）
 
 ### 1.2 Embedding（需下载）
 

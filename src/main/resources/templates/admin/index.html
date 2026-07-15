@@ -17,11 +17,13 @@
 
   <div class="card">
     <h1>智能客服管理台</h1>
-    <p class="muted">基于 microservice-framework + Spring AI 的企业智能客服 MVP。</p>
+    <p class="muted">基于 microservice-framework + Spring AI。知识库对接 Dify；模型可切换 local（llama.cpp）/ cloud（百炼等）。</p>
+    <p class="muted">当前：模型源=<span class="mono" th:text="${modelSource}">local</span>
+      · 知识库=<span class="mono" th:text="${knowledgeProvider}">dify</span></p>
     <div class="grid">
       <div class="tile">
         <h3>知识库</h3>
-        <p class="muted">上传 PDF/MD/TXT，向量化入库，支持检索引用。</p>
+        <p class="muted">默认对接 Dify 检索；local 模式可本机上传入库。</p>
         <a class="btn" th:href="@{/admin/knowledge}">进入</a>
       </div>
       <div class="tile">

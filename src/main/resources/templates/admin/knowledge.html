@@ -16,9 +16,46 @@
   </div>
 
   <div class="card">
-    <h1>上传文档</h1>
+    <h1>知识库</h1>
+    <p class="muted">
+      检索提供方：<span class="mono" th:text="${knowledgeProvider}">dify</span>
+      · 模型源：<span class="mono" th:text="${modelSource}">local</span>
+    </p>
     <p th:if="${message}" class="flash-ok" th:text="${message}"></p>
     <p th:if="${error}" class="flash-err" th:text="${error}"></p>
+
+    <div th:if="${knowledgeProvider == 'dify'}">
+      <p>企业知识库由 <strong>Dify</strong> 管理（文档上传/切分/索引在 Dify 完成）。</p>
+      <p class="muted">API：
+        <span class="mono" th:text="${difyBaseUrl}">http://127.0.0.1/v1</span>
+        · Dataset 已配置：
+        <span th:text="${difyDatasetConfigured}">false</span>
+      </p>
+      <form th:action="@{/admin/knowledge/search}" method="post">
+        <label>检索调试（调用 Dify retrieve）</label>
+        <div class="row">
+          <div><input type="text" name="query" placeholder="输入问题关键词" required th:value="${searchQuery}"/></div>
+          <div><label>&nbsp;</label><button type="submit">检索</button></div>
+        </div>
+      </form>
+      <div th:if="${searchHits != null}" style="margin-top:12px">
+        <h3>命中</h3>
+        <table>
+          <thead><tr><th>标题</th><th>分数</th><th>内容</th></tr></thead>
+          <tbody>
+          <tr th:each="h : ${searchHits}">
+            <td th:text="${h.title}">t</td>
+            <td th:text="${h.score}">0</td>
+            <td th:text="${h.content}">c</td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(searchHits)}"><td colspan="3" class="muted">无命中</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div th:if="${localIngest}">
+    <h2>本地上传（provider=local）</h2>
     <form th:action="@{/admin/knowledge/upload}" method="post" enctype="multipart/form-data">
       <div class="row">
         <div>
@@ -35,9 +72,10 @@
         </div>
       </div>
     </form>
+    </div>
   </div>
 
-  <div class="card">
+  <div class="card" th:if="${localIngest}">
     <h2>文档列表</h2>
     <table>
       <thead>

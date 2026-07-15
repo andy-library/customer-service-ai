@@ -2,16 +2,42 @@
 
 企业智能客服 MVP：基于 [microservice-framework](https://github.com/andy-library/microservice-framework) + Spring AI。
 
+**知识库由 Dify 构建；本应用负责编排、意图路由、多模型网关与检索调用。**  
+**模型支持 local（llama.cpp）/ cloud（百炼等 OpenAI 兼容）一键切换。**
+
 ## 技术栈
 
-| 组件 | 版本 |
-|------|------|
+| 组件 | 版本 / 说明 |
+|------|-------------|
 | OpenJDK | 21 |
 | microservice-framework | 1.0.0-alpha.1（Boot 3.3.13 / Cloud 2023.0.6） |
 | Spring AI | 1.1.8 |
-| DB | PostgreSQL + PgVector |
+| 知识库 | **Dify** Dataset Retrieve API（主路径） |
+| 本地模型 | llama.cpp OpenAI 兼容：Chat `:18080` / Embed `:18081` |
+| 云端模型 | 可插拔 OpenAI 兼容（默认百炼 `compatible-mode`） |
+| DB | PostgreSQL（会话/路由日志；local 知识库时 + PgVector） |
 
-## 快速开始
+## 架构
+
+```
+用户 ──► Spring AI（路由 / 会话 / 编排）
+              ├─ CS_AI_MODEL_SOURCE=local  → llama :18080 (local-qwen)
+              ├─ CS_AI_MODEL_SOURCE=cloud  → 百炼等 (csai.cloud.*)
+              └─ CS_AI_KNOWLEDGE_PROVIDER=dify → Dify Dataset retrieve
+```
+
+## 快速开始（推荐：本机 llama + Dify）
+
+### 0. 本机已启动的两个 llama.cpp
+
+| 服务 | 端口 | model id | 用途 |
+|------|------|----------|------|
+| Chat | **18080** | `local-qwen` | 分类 + 回答 |
+| Embedding | **18081** | `local-bge-m3` | 仅 `knowledge=local` 时需要 |
+
+```bash
+./scripts/local-llm/healthcheck.sh
+```
 
 ### 1. 安装技术底座（首次）
 
@@ -19,61 +45,79 @@
 ./scripts/install-framework.sh
 ```
 
-### 2. 启动数据库
+### 2. 数据库
 
 ```bash
-# Rancher Desktop 用户如需：
-# export DOCKER_HOST=unix://$HOME/.rd/docker.sock
-docker compose up -d
+docker compose up -d postgres
 ```
 
-### 3. 配置密钥（真实模型联调）
+### 3. 配置
 
 ```bash
-cp .env.example .env
-# 编辑 .env：至少 CS_AI_DEFAULT_BASE_URL + CS_AI_DEFAULT_API_KEY
+cp .env.local-llama.example .env
+# 填写：
+#   DIFY_BASE_URL / DIFY_API_KEY / DIFY_DATASET_ID
+#   CS_AI_MODEL_SOURCE=local
+#   CS_AI_KNOWLEDGE_PROVIDER=dify
 ./scripts/check-env.sh
-./scripts/run-real.sh
-# 另一终端：
-./scripts/smoke-real.sh http://localhost:8081
 ```
 
-详见：`docs/development/REAL-MODEL-联调.md`  
-要求端点为 **OpenAI-compatible**（DeepSeek / 通义 compatible / OpenAI 等）。Anthropic 原生 API 不支持。
-
-### 4. 无密钥演示（mock）
+### 4. 启动应用
 
 ```bash
-docker compose up -d
-mvn spring-boot:run -Dspring-boot.run.profiles=mock \
-  -Dspring-boot.run.arguments=--server.port=8081
+set -a && source .env && set +a
+mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
 ```
-
-mock 使用确定性分类/回答与内存向量库，仍依赖 Postgres 存业务表。
 
 ### 5. 访问
 
 | 地址 | 说明 |
 |------|------|
-| http://localhost:8080/admin | 管理后台 |
-| http://localhost:8080/admin/chat | 对话测试台 |
-| http://localhost:8080/api/v1/ping | 探活（ApiResponse 包装） |
-| http://localhost:8080/api/v1/models | 模型列表 |
-| http://localhost:8080/api/v1/chat | 同步问答 |
-| http://localhost:8080/swagger-ui.html | OpenAPI |
-| http://localhost:8080/actuator/health | 健康检查 |
+| http://localhost:8081/admin | 管理后台 |
+| http://localhost:8081/admin/knowledge | Dify 检索调试 |
+| http://localhost:8081/admin/chat | 对话测试 |
+| http://localhost:8081/api/v1/runtime | 当前模型源 / 知识库 |
+| http://localhost:8081/api/v1/ping | 探活 |
+| http://localhost:8081/api/v1/chat | 同步问答 |
+| http://localhost:8081/swagger-ui.html | OpenAPI |
 
-### API 示例
+### 切换云端模型
 
 ```bash
-curl -s -X POST http://localhost:8080/api/v1/chat \
+# .env
+CS_AI_MODEL_SOURCE=cloud
+CS_AI_CLOUD_API_KEY=sk-xxx
+# 重启应用即可（Registry 启动时按 model-source 加载）
+```
+
+详见：`docs/development/DIFY-知识库与可插拔模型.md`、`docs/development/BAILIAN-GLM-配置.md`
+
+### 无密钥演示（mock）
+
+```bash
+docker compose up -d postgres
+mvn spring-boot:run -Dspring-boot.run.profiles=mock \
+  -Dspring-boot.run.arguments=--server.port=8081
+```
+
+## API 示例
+
+```bash
+# 当前运行时配置（无密钥）
+curl -s http://localhost:8081/api/v1/runtime | jq
+
+# 对话
+curl -s -X POST http://localhost:8081/api/v1/chat \
   -H 'Content-Type: application/json' \
   -d '{"message":"如何申请退款？"}' | jq
 
-curl -s -X POST http://localhost:8080/api/v1/knowledge/documents \
-  -F 'file=@./samples/refund-policy.md' \
-  -F 'title=退款政策'
+# 知识检索（走 Dify 或 local）
+curl -s -X POST http://localhost:8081/api/v1/knowledge/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"退款政策","topK":5}' | jq
 ```
+
+> `provider=dify` 时不要用本服务上传文档；请在 **Dify 控制台** 管理知识库。
 
 ## 测试
 
@@ -81,26 +125,16 @@ curl -s -X POST http://localhost:8080/api/v1/knowledge/documents \
 mvn test
 ```
 
-## 断点续跑
-
-中断后请先读：
-
-**`docs/superpowers/plans/PROGRESS.md`**
-
-然后按「当前任务」继续。实现计划见  
-`docs/superpowers/plans/2026-07-15-intelligent-customer-service-mvp.md`。
-
 ## 文档索引
 
 | 文档 | 路径 |
 |------|------|
-| 进度记忆 | `docs/superpowers/plans/PROGRESS.md` |
-| 实现计划 | `docs/superpowers/plans/2026-07-15-intelligent-customer-service-mvp.md` |
-| 设计 v1.1 | `docs/superpowers/specs/2026-07-15-intelligent-customer-service-design.md` |
-| 底座分析 | `docs/analysis/microservice-framework-foundation-analysis.md` |
-| PRD | `docs/requirements/PRD-智能客服-MVP.md` |
+| **进度记忆** | `docs/superpowers/plans/PROGRESS.md` |
+| **Dify + 可插拔模型** | `docs/development/DIFY-知识库与可插拔模型.md` |
+| 本地 llama 部署 | `docs/development/LOCAL-LLAMA-全量部署-M1.md` |
+| 百炼 glm | `docs/development/BAILIAN-GLM-配置.md` |
 | 开发文档 | `docs/development/DEV-智能客服-MVP.md` |
-| 验收清单 | `docs/acceptance/ACCEPTANCE-智能客服-MVP.md` |
+| 设计 / PRD / 验收 | `docs/superpowers/` · `docs/requirements/` · `docs/acceptance/` |
 
 ## 模块结构
 
@@ -109,4 +143,4 @@ com.enterprise.csai
   common / modelgateway / router / knowledge / chat / admin
 ```
 
-主链路：提问 → LLM 意图分类 → 选模型 →（可选）RAG → 回答 + sources。
+主链路：提问 → LLM 意图分类 → 选模型 →（Dify/local RAG）→ 回答 + sources。

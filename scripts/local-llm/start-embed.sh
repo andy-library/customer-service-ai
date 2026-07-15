@@ -1,29 +1,27 @@
 #!/usr/bin/env bash
-# Start local Embedding model for RAG via llama-server --embedding.
+# Start local Embedding model via llama-server --embedding.
+# Default port/alias match application.yml: :18081 / local-bge-m3
+# Note: with knowledge.provider=dify, Spring AI does NOT need local embed for RAG.
 set -euo pipefail
 
 HOST="${HOST:-127.0.0.1}"
-PORT="${PORT:-8083}"
+PORT="${PORT:-18081}"
 CTX="${CTX:-8192}"
 NGL="${NGL:-99}"
-ALIAS="${ALIAS:-qwen3-embedding}"
+ALIAS="${ALIAS:-local-bge-m3}"
 API_KEY="${API_KEY:-sk-local}"
 
-# Override after download, e.g.:
-#   MODEL=/Users/andy.yang/LocalModels/Qwen3-Embedding-0.6B/xxx.gguf
-#   ALIAS=qwen3-embedding
-# or bge-m3:
-#   MODEL=/Users/andy.yang/LocalModels/bge-m3/bge-m3-Q4_K_M.gguf ALIAS=bge-m3
+# Prefer bge-m3 (dim 1024) as used on this machine
 MODEL="${MODEL:-}"
 if [[ -z "$MODEL" ]]; then
-  # auto-pick first gguf under common dirs
   for d in \
+    /Users/andy.yang/LocalModels/bge-m3 \
+    /Users/andy.yang/LocalModels/BAAI-bge-m3 \
     /Users/andy.yang/LocalModels/Qwen3-Embedding-0.6B \
-    /Users/andy.yang/LocalModels/Qwen3-Embedding \
-    /Users/andy.yang/LocalModels/bge-m3
+    /Users/andy.yang/LocalModels/Qwen3-Embedding
   do
     if [[ -d "$d" ]]; then
-      cand="$(find "$d" -maxdepth 1 -type f -name '*.gguf' ! -iname 'mmproj*' | sort | head -n 1 || true)"
+      cand="$(find "$d" -maxdepth 2 -type f -name '*.gguf' ! -iname 'mmproj*' | sort | head -n 1 || true)"
       if [[ -n "$cand" ]]; then
         MODEL="$cand"
         break
@@ -40,22 +38,17 @@ if [[ -z "${MODEL}" || ! -f "$MODEL" ]]; then
   cat >&2 <<'EOF'
 ERROR: No embedding GGUF found.
 
-Download one (recommended Qwen3-Embedding-0.6B), e.g.:
+Download bge-m3 (recommended, dim=1024), then:
 
-  mkdir -p /Users/andy.yang/LocalModels/Qwen3-Embedding-0.6B
-  cd /Users/andy.yang/LocalModels/Qwen3-Embedding-0.6B
-  huggingface-cli download Qwen/Qwen3-Embedding-0.6B-GGUF --include "*.gguf" --local-dir .
-
-Then re-run: ./scripts/local-llm/start-embed.sh
-Or: MODEL=/path/to/model.gguf ./scripts/local-llm/start-embed.sh
+  MODEL=/path/to/bge-m3.gguf ALIAS=local-bge-m3 ./scripts/local-llm/start-embed.sh
 EOF
   exit 1
 fi
 
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
-  echo "Port $PORT already in use."
+  echo "Port $PORT already in use (OK if embed llama is already running)."
   lsof -nP -iTCP:"$PORT" -sTCP:LISTEN || true
-  exit 1
+  exit 0
 fi
 
 echo "Starting Embedding llama-server"

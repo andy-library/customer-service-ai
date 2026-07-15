@@ -18,12 +18,29 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "csai")
 public class CsaiProperties {
 
+    /**
+     * Active model backend: {@code local} (llama.cpp) or {@code cloud} (Bailian etc.).
+     */
+    @NotBlank
+    private String modelSource = "local";
+
     @Valid
     private List<ModelConfig> models = new ArrayList<>();
 
     @Valid
     @NotNull
     private EmbeddingConfig embedding = new EmbeddingConfig();
+
+    /**
+     * Optional cloud endpoints; used when {@link #modelSource} is {@code cloud}.
+     */
+    @Valid
+    @NotNull
+    private EndpointBundle cloud = new EndpointBundle();
+
+    @Valid
+    @NotNull
+    private KnowledgeConfig knowledge = new KnowledgeConfig();
 
     @Valid
     @NotNull
@@ -41,6 +58,18 @@ public class CsaiProperties {
     @NotNull
     private UploadConfig upload = new UploadConfig();
 
+    public String getModelSource() {
+        return modelSource;
+    }
+
+    public void setModelSource(String modelSource) {
+        this.modelSource = modelSource;
+    }
+
+    public boolean isCloudModelSource() {
+        return modelSource != null && modelSource.equalsIgnoreCase("cloud");
+    }
+
     public List<ModelConfig> getModels() {
         return models;
     }
@@ -55,6 +84,22 @@ public class CsaiProperties {
 
     public void setEmbedding(EmbeddingConfig embedding) {
         this.embedding = embedding;
+    }
+
+    public EndpointBundle getCloud() {
+        return cloud;
+    }
+
+    public void setCloud(EndpointBundle cloud) {
+        this.cloud = cloud;
+    }
+
+    public KnowledgeConfig getKnowledge() {
+        return knowledge;
+    }
+
+    public void setKnowledge(KnowledgeConfig knowledge) {
+        this.knowledge = knowledge;
     }
 
     public RouterConfig getRouter() {
@@ -87,6 +132,187 @@ public class CsaiProperties {
 
     public void setUpload(UploadConfig upload) {
         this.upload = upload;
+    }
+
+    /**
+     * Cloud OpenAI-compatible endpoints (pluggable).
+     */
+    public static class EndpointBundle {
+        private String baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        private String apiKey = "";
+        private String classifierModel = "glm-5.1";
+        private String answerStrongModel = "glm-5.1";
+        private String answerFastModel = "glm-5.1";
+        private String embeddingBaseUrl = "";
+        private String embeddingApiKey = "";
+        private String embeddingModel = "text-embedding-v3";
+        private int embeddingDimensions = 1024;
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
+        }
+
+        public String getClassifierModel() {
+            return classifierModel;
+        }
+
+        public void setClassifierModel(String classifierModel) {
+            this.classifierModel = classifierModel;
+        }
+
+        public String getAnswerStrongModel() {
+            return answerStrongModel;
+        }
+
+        public void setAnswerStrongModel(String answerStrongModel) {
+            this.answerStrongModel = answerStrongModel;
+        }
+
+        public String getAnswerFastModel() {
+            return answerFastModel;
+        }
+
+        public void setAnswerFastModel(String answerFastModel) {
+            this.answerFastModel = answerFastModel;
+        }
+
+        public String getEmbeddingBaseUrl() {
+            return embeddingBaseUrl;
+        }
+
+        public void setEmbeddingBaseUrl(String embeddingBaseUrl) {
+            this.embeddingBaseUrl = embeddingBaseUrl;
+        }
+
+        public String getEmbeddingApiKey() {
+            return embeddingApiKey;
+        }
+
+        public void setEmbeddingApiKey(String embeddingApiKey) {
+            this.embeddingApiKey = embeddingApiKey;
+        }
+
+        public String getEmbeddingModel() {
+            return embeddingModel;
+        }
+
+        public void setEmbeddingModel(String embeddingModel) {
+            this.embeddingModel = embeddingModel;
+        }
+
+        public int getEmbeddingDimensions() {
+            return embeddingDimensions;
+        }
+
+        public void setEmbeddingDimensions(int embeddingDimensions) {
+            this.embeddingDimensions = embeddingDimensions;
+        }
+    }
+
+    public static class KnowledgeConfig {
+        /**
+         * {@code dify} | {@code local} | {@code none}
+         */
+        @NotBlank
+        private String provider = "dify";
+
+        @Valid
+        @NotNull
+        private DifyConfig dify = new DifyConfig();
+
+        public String getProvider() {
+            return provider;
+        }
+
+        public void setProvider(String provider) {
+            this.provider = provider;
+        }
+
+        public DifyConfig getDify() {
+            return dify;
+        }
+
+        public void setDify(DifyConfig dify) {
+            this.dify = dify;
+        }
+
+        public boolean isDify() {
+            return "dify".equalsIgnoreCase(provider);
+        }
+
+        public boolean isLocal() {
+            return "local".equalsIgnoreCase(provider);
+        }
+    }
+
+    public static class DifyConfig {
+        private String baseUrl = "http://127.0.0.1/v1";
+        private String apiKey = "";
+        private String datasetId = "";
+        @Min(1)
+        private int topK = 5;
+        private double scoreThreshold = 0.0;
+        private String searchMethod = "hybrid_search";
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
+        }
+
+        public String getDatasetId() {
+            return datasetId;
+        }
+
+        public void setDatasetId(String datasetId) {
+            this.datasetId = datasetId;
+        }
+
+        public int getTopK() {
+            return topK;
+        }
+
+        public void setTopK(int topK) {
+            this.topK = topK;
+        }
+
+        public double getScoreThreshold() {
+            return scoreThreshold;
+        }
+
+        public void setScoreThreshold(double scoreThreshold) {
+            this.scoreThreshold = scoreThreshold;
+        }
+
+        public String getSearchMethod() {
+            return searchMethod;
+        }
+
+        public void setSearchMethod(String searchMethod) {
+            this.searchMethod = searchMethod;
+        }
     }
 
     public static class ModelConfig {

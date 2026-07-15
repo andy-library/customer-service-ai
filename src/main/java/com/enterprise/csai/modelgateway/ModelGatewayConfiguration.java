@@ -23,10 +23,13 @@ public class ModelGatewayConfiguration {
     private static final Logger log = LoggerFactory.getLogger(ModelGatewayConfiguration.class);
 
     @Bean
-    ApplicationRunner modelRegistryInitializer(CsaiProperties properties, ModelRegistry registry) {
+    ApplicationRunner modelRegistryInitializer(
+            ActiveModelProfileResolver profileResolver,
+            ModelRegistry registry) {
         return args -> {
+            log.info("model-source={}", profileResolver.modelSource());
             int registered = 0;
-            for (CsaiProperties.ModelConfig model : properties.getModels()) {
+            for (CsaiProperties.ModelConfig model : profileResolver.resolveChatModels()) {
                 if (!model.isEnabled()) {
                     log.info("skip disabled model id={}", model.getId());
                     continue;
@@ -38,10 +41,11 @@ public class ModelGatewayConfiguration {
                 ChatModel chatModel = buildChatModel(model);
                 registry.register(model, chatModel);
                 registered++;
-                log.info("registered chat model id={} role={} modelName={}",
-                        model.getId(), model.getRole(), model.getModelName());
+                log.info("registered chat model id={} role={} modelName={} baseUrl={}",
+                        model.getId(), model.getRole(), model.getModelName(),
+                        ModelGatewayConfiguration.normalizeBaseUrl(model.getBaseUrl()));
             }
-            log.info("model registry ready size={}", registered);
+            log.info("model registry ready size={} source={}", registered, profileResolver.modelSource());
         };
     }
 

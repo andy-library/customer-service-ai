@@ -2,10 +2,12 @@
 
 | 属性 | 值 |
 |------|-----|
-| 版本 | **1.1** |
+| 版本 | **1.2** |
 | 日期 | 2026-07-15 |
 | 关联设计 | `docs/superpowers/specs/2026-07-15-intelligent-customer-service-design.md` v1.1 |
 | 技术底座 | https://github.com/andy-library/microservice-framework `1.0.0-alpha.1` |
+| 知识库 | **Dify**（主路径）；可选 local PgVector / none |
+| 模型 | **可插拔** local llama.cpp / cloud OpenAI-compatible |
 
 ### 修订记录
 
@@ -13,6 +15,7 @@
 |------|------|
 | 1.0 | 初版开发说明 |
 | 1.1 | 以 microservice-framework 为强制构建与运行基座 |
+| 1.2 | 知识库改为 Dify 检索；模型 local/cloud 可切换；对齐本机 18080/18081 |
 
 ---
 
@@ -151,9 +154,26 @@ docker compose up -d postgres
 
 参照 Demo `application.yml` 与设计规格 §6.2：时区、Web 响应、DB migration、security permitPaths、logging masking 等。
 
-### 4.2 csai.*（业务）
+### 4.2 csai.*（业务）— 可插拔模型与知识库
 
-模型列表、路由映射、RAG、embedding、history 窗口等。**密钥仅 env。**
+| 配置 | 环境变量 | 说明 |
+|------|----------|------|
+| `csai.model-source` | `CS_AI_MODEL_SOURCE` | `local`（默认）或 `cloud`；**改后需重启** |
+| `csai.models` | `CS_AI_*_MODEL` 等 | local 时的 Chat 列表（默认 `local-qwen` @ 18080） |
+| `csai.embedding` | `CS_AI_EMBEDDING_*` | local embedding（默认 bge-m3 @ 18081，仅 `knowledge=local` 必需） |
+| `csai.cloud.*` | `CS_AI_CLOUD_*` | cloud 时的 Chat/Embed 端点（百炼等，可插拔） |
+| `csai.knowledge.provider` | `CS_AI_KNOWLEDGE_PROVIDER` | `dify`（默认）/ `local` / `none` |
+| `csai.knowledge.dify.*` | `DIFY_*` | Dify Dataset API |
+
+**职责：** Dify 管知识沉淀与索引；Spring AI 管意图路由、模型网关、会话、调 Dify 检索并生成回答。
+
+实现类：
+
+- `ActiveModelProfileResolver` — local/cloud 解析
+- `KnowledgeRetriever` — `DifyKnowledgeRetriever` / `LocalVectorKnowledgeRetriever` / `NoOpKnowledgeRetriever`
+- `GET /api/v1/runtime` — 查看当前模型源与知识库（不含密钥）
+
+详细步骤见 **`docs/development/DIFY-知识库与可插拔模型.md`**。
 
 ### 4.3 数据源
 

@@ -1,44 +1,44 @@
 package com.enterprise.csai.knowledge;
 
 import com.enterprise.csai.common.config.CsaiProperties;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Facade over the active {@link KnowledgeRetriever} (Dify / local / none).
+ */
 @Service
 public class KnowledgeSearchService {
 
-    private final VectorStore vectorStore;
+    private static final Logger log = LoggerFactory.getLogger(KnowledgeSearchService.class);
+
+    private final KnowledgeRetriever retriever;
     private final CsaiProperties properties;
 
-    public KnowledgeSearchService(VectorStore vectorStore, CsaiProperties properties) {
-        this.vectorStore = vectorStore;
+    public KnowledgeSearchService(List<KnowledgeRetriever> retrievers, CsaiProperties properties) {
         this.properties = properties;
+        String wanted = properties.getKnowledge().getProvider();
+        this.retriever = retrievers.stream()
+                .filter(r -> r.provider().equalsIgnoreCase(wanted))
+                .findFirst()
+                .orElseGet(() -> retrievers.stream()
+                        .filter(r -> "none".equalsIgnoreCase(r.provider()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException(
+                                "No KnowledgeRetriever for provider=" + wanted
+                                        + "; available=" + retrievers.stream().map(KnowledgeRetriever::provider).toList())));
+        log.info("knowledge retriever active provider={}", retriever.provider());
     }
 
     public List<KnowledgeChunk> search(String query, Integer topK) {
         int k = topK != null && topK > 0 ? topK : properties.getRag().getTopK();
-        SearchRequest request = SearchRequest.builder()
-                .query(query == null ? "" : query)
-                .topK(k)
-                .similarityThreshold(properties.getRag().getSimilarityThreshold())
-                .build();
-        List<Document> docs = vectorStore.similaritySearch(request);
-        return docs.stream().map(this::toChunk).toList();
+        return retriever.search(query, k);
     }
 
-    private KnowledgeChunk toChunk(Document doc) {
-        Object documentId = doc.getMetadata().get("documentId");
-        Object title = doc.getMetadata().get("title");
-        double score = doc.getScore() != null ? doc.getScore() : 0.0;
-        return new KnowledgeChunk(
-                documentId != null ? documentId.toString() : "",
-                title != null ? title.toString() : "",
-                doc.getText() != null ? doc.getText() : "",
-                score
-        );
+    public String activeProvider() {
+        return retriever.provider();
     }
 }

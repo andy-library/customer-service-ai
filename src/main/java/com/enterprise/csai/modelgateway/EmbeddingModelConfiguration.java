@@ -25,16 +25,17 @@ public class EmbeddingModelConfiguration {
 
     @Bean
     @Primary
-    EmbeddingModel csaiEmbeddingModel(CsaiProperties properties) {
-        CsaiProperties.EmbeddingConfig emb = properties.getEmbedding();
+    EmbeddingModel csaiEmbeddingModel(ActiveModelProfileResolver profileResolver) {
+        CsaiProperties.EmbeddingConfig emb = profileResolver.resolveEmbedding();
         String baseUrl = ModelGatewayConfiguration.normalizeBaseUrl(emb.getBaseUrl());
         OpenAiApi api = OpenAiCompatibleClients.create(emb.getBaseUrl(), emb.getApiKey());
         OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
                 .model(emb.getModelName())
                 .dimensions(emb.getDimensions())
                 .build();
-        log.info("embedding model ready model={} baseUrl={} dimensions={}",
-                emb.getModelName(), baseUrl, emb.getDimensions());
+        log.info("embedding model ready source={} model={} baseUrl={} dimensions={}",
+                profileResolver.modelSource(), emb.getModelName(), baseUrl, emb.getDimensions());
         return new OpenAiEmbeddingModel(api, MetadataMode.EMBED, options);
     }
 }
+

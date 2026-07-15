@@ -19,17 +19,19 @@ spring:
     locations: classpath:db/migration
   ai:
     openai:
-      api-key: ${CS_AI_DEFAULT_API_KEY:sk-placeholder}
-      base-url: ${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}
+      # Defaults point at local llama chat; overridden by csai models when registry builds
+      api-key: ${CS_AI_DEFAULT_API_KEY:sk-local}
+      base-url: ${CS_AI_DEFAULT_BASE_URL:http://127.0.0.1:18080/v1}
       chat:
         options:
-          model: ${CS_AI_ANSWER_FAST_MODEL:gpt-4o-mini}
+          model: ${CS_AI_ANSWER_FAST_MODEL:local-qwen}
       embedding:
         options:
-          model: ${CS_AI_EMBEDDING_MODEL:text-embedding-3-small}
+          model: ${CS_AI_EMBEDDING_MODEL:local-bge-m3}
     vectorstore:
       pgvector:
-        initialize-schema: true
+        # Only needed when csai.knowledge.provider=local
+        initialize-schema: ${CS_AI_PGVECTOR_INIT:false}
         index-type: HNSW
         distance-type: COSINE_DISTANCE
         dimensions: ${CS_AI_EMBEDDING_DIMENSIONS:1024}
@@ -62,33 +64,62 @@ framework:
         - /actuator/info
 
 csai:
+  # local = llama.cpp ; cloud = Bailian/OpenAI-compatible cloud
+  model-source: ${CS_AI_MODEL_SOURCE:local}
+
+  # Default model list = LOCAL llama (18080). Cloud overrides via model-source=cloud + csai.cloud.*
   models:
     - id: classifier-default
-      display-name: Classifier
-      base-url: ${CS_AI_CLASSIFIER_BASE_URL:${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}}
-      api-key: ${CS_AI_CLASSIFIER_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-placeholder}}
-      model-name: ${CS_AI_CLASSIFIER_MODEL:gpt-4o-mini}
+      display-name: Classifier (local)
+      base-url: ${CS_AI_CLASSIFIER_BASE_URL:${CS_AI_DEFAULT_BASE_URL:http://127.0.0.1:18080/v1}}
+      api-key: ${CS_AI_CLASSIFIER_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-local}}
+      model-name: ${CS_AI_CLASSIFIER_MODEL:local-qwen}
       role: CLASSIFIER
       enabled: true
     - id: answer-strong
-      display-name: Answer Strong
-      base-url: ${CS_AI_ANSWER_STRONG_BASE_URL:${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}}
-      api-key: ${CS_AI_ANSWER_STRONG_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-placeholder}}
-      model-name: ${CS_AI_ANSWER_STRONG_MODEL:gpt-4o}
+      display-name: Answer Strong (local)
+      base-url: ${CS_AI_ANSWER_STRONG_BASE_URL:${CS_AI_DEFAULT_BASE_URL:http://127.0.0.1:18080/v1}}
+      api-key: ${CS_AI_ANSWER_STRONG_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-local}}
+      model-name: ${CS_AI_ANSWER_STRONG_MODEL:local-qwen}
       role: ANSWER
       enabled: true
     - id: answer-fast
-      display-name: Answer Fast
-      base-url: ${CS_AI_ANSWER_FAST_BASE_URL:${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}}
-      api-key: ${CS_AI_ANSWER_FAST_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-placeholder}}
-      model-name: ${CS_AI_ANSWER_FAST_MODEL:gpt-4o-mini}
+      display-name: Answer Fast (local)
+      base-url: ${CS_AI_ANSWER_FAST_BASE_URL:${CS_AI_DEFAULT_BASE_URL:http://127.0.0.1:18080/v1}}
+      api-key: ${CS_AI_ANSWER_FAST_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-local}}
+      model-name: ${CS_AI_ANSWER_FAST_MODEL:local-qwen}
       role: ANSWER
       enabled: true
+
   embedding:
-    base-url: ${CS_AI_EMBEDDING_BASE_URL:${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}}
-    api-key: ${CS_AI_EMBEDDING_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-placeholder}}
-    model-name: ${CS_AI_EMBEDDING_MODEL:text-embedding-v3}
+    base-url: ${CS_AI_EMBEDDING_BASE_URL:http://127.0.0.1:18081/v1}
+    api-key: ${CS_AI_EMBEDDING_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-local}}
+    model-name: ${CS_AI_EMBEDDING_MODEL:local-bge-m3}
     dimensions: ${CS_AI_EMBEDDING_DIMENSIONS:1024}
+
+  # Pluggable cloud endpoints (activated when model-source=cloud)
+  cloud:
+    base-url: ${CS_AI_CLOUD_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+    api-key: ${CS_AI_CLOUD_API_KEY:${CS_AI_DEFAULT_API_KEY:}}
+    classifier-model: ${CS_AI_CLOUD_CLASSIFIER_MODEL:glm-5.1}
+    answer-strong-model: ${CS_AI_CLOUD_ANSWER_STRONG_MODEL:glm-5.1}
+    answer-fast-model: ${CS_AI_CLOUD_ANSWER_FAST_MODEL:glm-5.1}
+    embedding-base-url: ${CS_AI_CLOUD_EMBEDDING_BASE_URL:${CS_AI_CLOUD_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}}
+    embedding-api-key: ${CS_AI_CLOUD_EMBEDDING_API_KEY:${CS_AI_CLOUD_API_KEY:}}
+    embedding-model: ${CS_AI_CLOUD_EMBEDDING_MODEL:text-embedding-v3}
+    embedding-dimensions: ${CS_AI_CLOUD_EMBEDDING_DIMENSIONS:1024}
+
+  knowledge:
+    # dify = enterprise KB in Dify; local = Spring PgVector; none = no retrieval
+    provider: ${CS_AI_KNOWLEDGE_PROVIDER:dify}
+    dify:
+      base-url: ${DIFY_BASE_URL:http://127.0.0.1/v1}
+      api-key: ${DIFY_API_KEY:}
+      dataset-id: ${DIFY_DATASET_ID:}
+      top-k: ${DIFY_TOP_K:5}
+      score-threshold: ${DIFY_SCORE_THRESHOLD:0.0}
+      search-method: ${DIFY_SEARCH_METHOD:hybrid_search}
+
   router:
     classifier-model-id: classifier-default
     default-answer-model-id: answer-fast
