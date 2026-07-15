@@ -16,6 +16,39 @@
     <version>0.2.0-rc.1</version>
     <name>customer-service-ai</name>
     <description>Enterprise intelligent customer service (quasi-production) on microservice-framework + Spring AI</description>
+    <url>https://github.com/andy-yang/customer-service-ai</url>
+    <inceptionYear>2026</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>andy-yang</id>
+            <name>andy yang</name>
+            <roles>
+                <role>owner</role>
+                <role>maintainer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/andy-yang/customer-service-ai.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/andy-yang/customer-service-ai.git</developerConnection>
+        <url>https://github.com/andy-yang/customer-service-ai</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/andy-yang/customer-service-ai/issues</url>
+    </issueManagement>
 
     <properties>
         <spring-ai.version>1.1.8</spring-ai.version>

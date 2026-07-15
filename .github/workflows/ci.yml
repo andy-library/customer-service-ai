@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, "feat/**"]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Unit tests
+        # Framework parent must be resolvable from Maven Central or a prior install step.
+        # If the parent is only available privately, replace this step with your org's setup.
+        run: mvn -B -q test
+        env:
+          # Keep CI offline from external LLM/Dify; unit tests use mocks.
+          MAVEN_OPTS: "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"

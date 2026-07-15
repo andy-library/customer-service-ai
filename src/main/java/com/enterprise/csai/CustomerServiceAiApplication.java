@@ -4,6 +4,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
+/**
+ * customer-service-ai entry point.
+ *
+ * @author andy yang
+ */
 @SpringBootApplication
 @ConfigurationPropertiesScan
 public class CustomerServiceAiApplication {

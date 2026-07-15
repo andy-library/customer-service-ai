@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Start local Embedding model via llama-server --embedding.
-# Default port/alias match application.yml: :18081 / local-bge-m3
-# Note: with knowledge.provider=dify, Spring AI does NOT need local embed for RAG.
+# Defaults: port 18081, alias local-bge-m3
+# Note: with knowledge.provider=dify, Spring AI does not need local embed for RAG.
 set -euo pipefail
 
 HOST="${HOST:-127.0.0.1}"
@@ -11,17 +11,18 @@ NGL="${NGL:-99}"
 ALIAS="${ALIAS:-local-bge-m3}"
 API_KEY="${API_KEY:-sk-local}"
 
-# Prefer bge-m3 (dim 1024) as used on this machine
+MODEL_DIR="${MODEL_DIR:-${HOME}/LocalModels}"
 MODEL="${MODEL:-}"
 if [[ -z "$MODEL" ]]; then
   for d in \
-    /Users/andy.yang/LocalModels/bge-m3 \
-    /Users/andy.yang/LocalModels/BAAI-bge-m3 \
-    /Users/andy.yang/LocalModels/Qwen3-Embedding-0.6B \
-    /Users/andy.yang/LocalModels/Qwen3-Embedding
+    "${MODEL_DIR}/bge-m3" \
+    "${MODEL_DIR}/BAAI-bge-m3" \
+    "${MODEL_DIR}/Qwen3-Embedding-0.6B" \
+    "${MODEL_DIR}/Qwen3-Embedding" \
+    "${MODEL_DIR}"
   do
     if [[ -d "$d" ]]; then
-      cand="$(find "$d" -maxdepth 2 -type f -name '*.gguf' ! -iname 'mmproj*' | sort | head -n 1 || true)"
+      cand="$(find "$d" -maxdepth 2 -type f -name '*.gguf' ! -iname 'mmproj*' 2>/dev/null | sort | head -n 1 || true)"
       if [[ -n "$cand" ]]; then
         MODEL="$cand"
         break
@@ -38,9 +39,10 @@ if [[ -z "${MODEL}" || ! -f "$MODEL" ]]; then
   cat >&2 <<'EOF'
 ERROR: No embedding GGUF found.
 
-Download bge-m3 (recommended, dim=1024), then:
+Download an embedding model (e.g. bge-m3, dim=1024), then:
 
-  MODEL=/path/to/bge-m3.gguf ALIAS=local-bge-m3 ./scripts/local-llm/start-embed.sh
+  MODEL=/path/to/model.gguf ALIAS=local-bge-m3 ./scripts/local-llm/start-embed.sh
+  # or: MODEL_DIR=$HOME/LocalModels ./scripts/local-llm/start-embed.sh
 EOF
   exit 1
 fi
@@ -72,4 +74,4 @@ nohup "$LLAMA_SERVER" \
 
 echo $! >"$PID_FILE"
 echo "PID $(cat "$PID_FILE")"
-echo "Test: curl -s http://${HOST}:${PORT}/v1/embeddings -H \"Authorization: Bearer ${API_KEY}\" -H 'Content-Type: application/json' -d '{\"model\":\"${ALIAS}\",\"input\":\"测试\"}'"
+echo "Test: curl -s http://${HOST}:${PORT}/v1/embeddings -H \"Authorization: Bearer ${API_KEY}\" -H 'Content-Type: application/json' -d '{\"model\":\"${ALIAS}\",\"input\":\"test\"}'"

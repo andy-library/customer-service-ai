@@ -8,7 +8,7 @@
 |----|------|
 | 机器 | Mac M1，统一内存 64GB |
 | llama.cpp | Homebrew `llama-server`（已装） |
-| 模型目录 | `/Users/andy.yang/LocalModels` |
+| 模型目录 | `$HOME/LocalModels` |
 | 已有对话模型 | **Qwen3.6-35B-A3B**（IQ2_M 11G / Q6 29G / Q8 41G）、Qwythos 9B、Gemma4 31B |
 | 已有向量模型 | **无**（需下载） |
 | 现有启动器 | `LocalModels/start-mac.sh`（默认 8080，交互式） |
@@ -30,7 +30,7 @@
 路径（默认推荐）：
 
 ```text
-/Users/andy.yang/LocalModels/Qwen3.6-35B-A3B/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf
+$HOME/LocalModels/Qwen3.6-35B-A3B/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf
 ```
 
 - **端口：** **`18080`**（与 `application.yml` / 本机实测一致；旧文档 8082 已废弃）  
@@ -51,8 +51,8 @@
 
 ```bash
 # 需要安装 huggingface-cli: pip install -U "huggingface_hub[cli]"
-mkdir -p /Users/andy.yang/LocalModels/Qwen3-Embedding-0.6B
-cd /Users/andy.yang/LocalModels/Qwen3-Embedding-0.6B
+mkdir -p $HOME/LocalModels/Qwen3-Embedding-0.6B
+cd $HOME/LocalModels/Qwen3-Embedding-0.6B
 
 # 示例：按仓库实际文件名调整（下载前在 HF 页面确认 .gguf 文件名）
 huggingface-cli download Qwen/Qwen3-Embedding-0.6B-GGUF \
@@ -65,8 +65,8 @@ huggingface-cli download Qwen/Qwen3-Embedding-0.6B-GGUF \
 备用 bge-m3：
 
 ```bash
-mkdir -p /Users/andy.yang/LocalModels/bge-m3
-cd /Users/andy.yang/LocalModels/bge-m3
+mkdir -p $HOME/LocalModels/bge-m3
+cd $HOME/LocalModels/bge-m3
 huggingface-cli download CompendiumLabs/bge-m3-gguf \
   --include "*Q4*.gguf" \
   --local-dir .
@@ -114,7 +114,7 @@ chmod +x scripts/local-llm/*.sh
 ### Step 1 — 确认 Postgres
 
 ```bash
-cd "/Volumes/Development HD/SourceCode/Spring AI"
+cd "$REPO_ROOT"
 export DOCKER_HOST=unix://$HOME/.rd/docker.sock   # Rancher Desktop 时
 docker compose up -d postgres
 ```
@@ -195,7 +195,7 @@ docker exec -it springai-postgres-1 psql -U csai -d csai -c 'DROP TABLE IF EXIST
 ### Step 5 — 启动客服应用（非 mock）
 
 ```bash
-cd "/Volumes/Development HD/SourceCode/Spring AI"
+cd "$REPO_ROOT"
 set -a && source .env && set +a
 mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
 ```

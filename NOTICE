@@ -1,0 +1,18 @@
+customer-service-ai
+Copyright 2026 andy yang
+
+This product includes software developed by andy yang
+and third-party open source projects.
+
+-------------------------------------------------------------------------------
+Third-party components (selected)
+
+- Spring Boot / Spring Framework — Apache License 2.0
+- Spring AI — Apache License 2.0
+- microservice-framework (if used as a dependency) — see that project's license
+- PostgreSQL JDBC Driver — BSD-2-Clause
+- Flyway Community — Apache License 2.0
+- Apache PDFBox — Apache License 2.0
+- Micrometer — Apache License 2.0
+
+Full dependency licenses are available via your Maven/Gradle dependency tree.

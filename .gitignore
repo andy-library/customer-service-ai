@@ -1,12 +1,44 @@
+# Build
 target/
+.flattened-pom.xml
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE
 .idea/
 *.iml
 .classpath
 .project
 .settings/
 .vscode/
+*.swp
+*~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Secrets & local env
 .env
-storage/
+.env.*
+!.env.example
+!.env.local-llama.example
+
+# Logs & runtime
 *.log
-.flattened-pom.xml
+logs/
+storage/
+tmp/
+/tmp/
+
+# Test / coverage
+.coverage
+coverage/
+*.exec
+
+# Local model caches (never commit weights)
+*.gguf
+models/
+LocalModels/
