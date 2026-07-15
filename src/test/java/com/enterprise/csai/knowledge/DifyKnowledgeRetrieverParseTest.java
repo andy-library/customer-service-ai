@@ -38,4 +38,15 @@ class DifyKnowledgeRetrieverParseTest {
         assertThat(chunks.getFirst().content()).contains("全额退款");
         assertThat(chunks.getFirst().score()).isEqualTo(0.91);
     }
+
+    @Test
+    void parseRecordsRejectsErrorPayload() {
+        CsaiProperties props = new CsaiProperties();
+        DifyKnowledgeRetriever retriever = new DifyKnowledgeRetriever(props, new ObjectMapper());
+        String raw = """
+                {"code":"internal_server_error","message":"Can't operate on closed transaction","status":500}
+                """;
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+                () -> ReflectionTestUtils.invokeMethod(retriever, "parseRecords", raw));
+    }
 }

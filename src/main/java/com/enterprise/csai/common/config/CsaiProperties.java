@@ -264,7 +264,12 @@ public class CsaiProperties {
         @Min(1)
         private int topK = 5;
         private double scoreThreshold = 0.0;
-        private String searchMethod = "hybrid_search";
+        private String searchMethod = "semantic_search";
+        /**
+         * When true, fall back to listing segments + keyword score if /retrieve fails
+         * or returns empty (workaround for Dify 1.16.0-rc1 retrieve serialization bug).
+         */
+        private boolean segmentFallback = true;
 
         public String getBaseUrl() {
             return baseUrl;
@@ -312,6 +317,14 @@ public class CsaiProperties {
 
         public void setSearchMethod(String searchMethod) {
             this.searchMethod = searchMethod;
+        }
+
+        public boolean isSegmentFallback() {
+            return segmentFallback;
+        }
+
+        public void setSegmentFallback(boolean segmentFallback) {
+            this.segmentFallback = segmentFallback;
         }
     }
 

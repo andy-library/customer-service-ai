@@ -118,7 +118,9 @@ csai:
       dataset-id: ${DIFY_DATASET_ID:}
       top-k: ${DIFY_TOP_K:5}
       score-threshold: ${DIFY_SCORE_THRESHOLD:0.0}
-      search-method: ${DIFY_SEARCH_METHOD:hybrid_search}
+      search-method: ${DIFY_SEARCH_METHOD:semantic_search}
+      # Workaround for Dify 1.16.0-rc1 /retrieve session bug when hits exist
+      segment-fallback: ${DIFY_SEGMENT_FALLBACK:true}
 
   router:
     classifier-model-id: classifier-default
