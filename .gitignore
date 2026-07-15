@@ -26,11 +26,20 @@ target/
 .DS_Store
 Thumbs.db
 
-# Secrets & local env
+# Secrets & local env (never commit real keys / backups)
 .env
 .env.*
 !.env.example
 !.env.local-llama.example
+*.bak
+.env.bak*
+*.pem
+*.p12
+*.jks
+id_rsa
+id_rsa.*
+credentials.json
+**/secrets/
 
 # Logs & runtime
 *.log
