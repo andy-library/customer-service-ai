@@ -128,24 +128,25 @@ public class AdminController {
 
     @GetMapping("/chat")
     public String chatPage(Model model) {
-        if (!model.containsAttribute("messageText")) {
-            model.addAttribute("messageText", "");
-        }
         model.addAttribute("modelSource", profileResolver.modelSource());
         model.addAttribute("knowledgeProvider", knowledgeSearchService.activeProvider());
         return "admin/chat";
     }
 
+    /**
+     * Legacy form POST kept for compatibility; prefer browser streaming UI → {@code /api/v1/chat/stream}.
+     */
     @PostMapping("/chat")
     public String chatSubmit(@RequestParam("message") String message, Model model) {
-        model.addAttribute("messageText", message);
         model.addAttribute("modelSource", profileResolver.modelSource());
         model.addAttribute("knowledgeProvider", knowledgeSearchService.activeProvider());
         try {
             ChatResponse resp = chatOrchestrator.chat(new ChatRequest(null, message, null));
             model.addAttribute("resp", resp);
+            model.addAttribute("messageText", message);
         } catch (Exception ex) {
             model.addAttribute("error", ex.getMessage());
+            model.addAttribute("messageText", message);
         }
         return "admin/chat";
     }

@@ -22,6 +22,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -32,7 +33,9 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -244,19 +247,27 @@ public class ChatOrchestrator {
         streamExecutor.execute(() -> {
             try {
                 long started = System.currentTimeMillis();
+                sendStatus(emitter, "received", "已收到消息，开始处理…");
                 if (guardrailPolicy.looksLikeInjection(request.message())) {
-                    emitter.send(SseEmitter.event().name("delta")
-                            .data(guardrailPolicy.injectionBlockedAnswer()));
+                    String answer = guardrailPolicy.injectionBlockedAnswer();
+                    emitter.send(SseEmitter.event().name("delta").data(answer));
+                    sendErrorMeta(emitter, null, answer);
                     emitter.complete();
                     return;
                 }
                 ChatSessionEntity session = loadOrCreateSession(request.sessionId(), request.message(), ownerId);
+                sendStatus(emitter, "session", "会话 " + session.getId());
                 List<ChatMessageEntity> history = messageRepository.findRecentBySession(
                         session.getId(), properties.getChat().getHistoryMaxMessages());
 
+                sendStatus(emitter, "classifying", "正在识别意图（本地模型可能需要数十秒）…");
                 RoutingDecision decision = routingService.route(request.message());
+                sendStatus(emitter, "classified",
+                        "意图 " + decision.intent() + " · 置信度 " + String.format("%.2f", decision.confidence()));
+
                 HandoffPolicy.HandoffDecision hd = handoffPolicy.evaluate(decision, request.message());
                 if (hd.handoff()) {
+                    sendStatus(emitter, "handoff", "触发转人工：" + hd.reason());
                     String answer = guardrailPolicy.handoffAnswer(hd.reason());
                     emitter.send(SseEmitter.event().name("delta").data(answer));
                     RoutingDecision finalDecision = new RoutingDecision(
@@ -266,7 +277,7 @@ public class ChatOrchestrator {
                     ChatResponse meta = new ChatResponse(
                             session.getId(), answer, finalDecision, List.of(),
                             false, List.of(), true, hd.reason());
-                    emitter.send(SseEmitter.event().name("meta").data(meta));
+                    emitter.send(SseEmitter.event().name("meta").data(meta, MediaType.APPLICATION_JSON));
                     emitter.complete();
                     return;
                 }
@@ -277,6 +288,7 @@ public class ChatOrchestrator {
                 boolean degraded = false;
                 List<KnowledgeChunk> chunks = List.of();
                 if (ragEnabled) {
+                    sendStatus(emitter, "retrieving", "正在检索知识库…");
                     KnowledgeSearchResult kr = knowledgeSearchService.searchDetailed(
                             request.message(), properties.getRag().getTopK());
                     chunks = kr.chunks();
@@ -284,6 +296,11 @@ public class ChatOrchestrator {
                         degraded = true;
                         degradedReasons.addAll(kr.degradedReasons());
                     }
+                    sendStatus(emitter, "retrieved",
+                            "知识命中 " + chunks.size() + " 条"
+                                    + (degraded ? "（已降级检索）" : ""));
+                } else {
+                    sendStatus(emitter, "skip_rag", "本轮不检索知识库");
                 }
                 List<SourceDto> sources = toSources(chunks);
 
@@ -297,11 +314,12 @@ public class ChatOrchestrator {
                     ChatResponse meta = new ChatResponse(
                             session.getId(), answer, finalDecision, sources,
                             true, List.of("NO_EVIDENCE"), false, null);
-                    emitter.send(SseEmitter.event().name("meta").data(meta));
+                    emitter.send(SseEmitter.event().name("meta").data(meta, MediaType.APPLICATION_JSON));
                     emitter.complete();
                     return;
                 }
 
+                sendStatus(emitter, "generating", "模型生成中（流式输出）… model=" + answerModelId);
                 List<Message> messages = buildMessages(history, chunks, request.message(), ragEnabled);
                 StringBuilder full = new StringBuilder();
                 final boolean degradedFinal = degraded;
@@ -315,7 +333,15 @@ public class ChatOrchestrator {
                                 throw new IllegalStateException(e);
                             }
                         })
-                        .doOnError(emitter::completeWithError)
+                        .doOnError(err -> {
+                            try {
+                                sendStatus(emitter, "error", err.getMessage() == null
+                                        ? "stream failed" : err.getMessage());
+                            } catch (Exception ignored) {
+                                // ignore
+                            }
+                            emitter.completeWithError(err);
+                        })
                         .doOnComplete(() -> {
                             try {
                                 String answer = full.toString();
@@ -344,7 +370,8 @@ public class ChatOrchestrator {
                                 ChatResponse meta = new ChatResponse(
                                         session.getId(), answer, finalDecision, sources,
                                         degradedFinal, reasonsFinal, false, null);
-                                emitter.send(SseEmitter.event().name("meta").data(meta));
+                                sendStatus(emitter, "done", "完成 · " + latency + " ms");
+                                emitter.send(SseEmitter.event().name("meta").data(meta, MediaType.APPLICATION_JSON));
                                 emitter.complete();
                                 metrics.recordChat(finalDecision.intent().name(), "ok",
                                         degradedFinal, false, latency);
@@ -354,10 +381,30 @@ public class ChatOrchestrator {
                         })
                         .subscribe();
             } catch (Exception ex) {
+                try {
+                    sendStatus(emitter, "error", ex.getMessage() == null ? "failed" : ex.getMessage());
+                } catch (Exception ignored) {
+                    // ignore
+                }
                 emitter.completeWithError(ex);
             }
         });
         return emitter;
+    }
+
+    private static void sendStatus(SseEmitter emitter, String phase, String message) throws IOException {
+        Map<String, String> body = new LinkedHashMap<>();
+        body.put("phase", phase);
+        body.put("message", message);
+        emitter.send(SseEmitter.event().name("status").data(body, MediaType.APPLICATION_JSON));
+    }
+
+    private static void sendErrorMeta(SseEmitter emitter, UUID sessionId, String answer) throws IOException {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("sessionId", sessionId);
+        body.put("answer", answer);
+        body.put("error", true);
+        emitter.send(SseEmitter.event().name("meta").data(body, MediaType.APPLICATION_JSON));
     }
 
     private void persistTurn(

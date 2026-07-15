@@ -2,13 +2,13 @@
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8"/>
-  <title>对话测试台</title>
+  <title>对话测试台 · 流式</title>
   <link rel="stylesheet" th:href="@{/admin/app.css}"/>
 </head>
 <body>
 <div class="layout">
   <div class="nav">
-    <div class="brand">对话测试</div>
+    <div class="brand">对话测试 · 流式</div>
     <a th:href="@{/admin}">首页</a>
     <a th:href="@{/admin/knowledge}">知识库</a>
     <a th:href="@{/admin/chat}">对话测试</a>
@@ -17,43 +17,290 @@
 
   <div class="card">
     <h1>对话测试台</h1>
-    <p class="muted">会触发意图分类 → 模型选择 →（可选）RAG → 生成回答。</p>
-    <p th:if="${error}" class="flash-err" th:text="${error}"></p>
-    <form th:action="@{/admin/chat}" method="post">
-      <label>用户问题</label>
-      <textarea name="message" required th:text="${messageText}"></textarea>
-      <p style="margin-top:12px"><button type="submit">发送</button></p>
+    <p class="muted">
+      流式输出 · 意图分类 → 知识检索 → 模型生成。
+      模型源=<span class="mono" th:text="${modelSource}">local</span>
+      · 知识库=<span class="mono" th:text="${knowledgeProvider}">dify</span>
+    </p>
+    <p class="muted">sessionId: <span class="mono" id="sessionIdLabel">（新会话）</span>
+      <button type="button" class="secondary" id="btnNewSession" style="margin-left:8px;padding:6px 10px;font-size:0.85rem">新会话</button>
+    </p>
+  </div>
+
+  <div class="card chat-panel">
+    <div id="statusBar" class="status-bar muted">就绪 · 等待输入</div>
+    <div id="messages" class="chat-messages" aria-live="polite"></div>
+
+    <form id="chatForm" class="chat-composer">
+      <label for="messageInput">用户问题</label>
+      <textarea id="messageInput" rows="3" placeholder="输入问题后回车发送（Shift+Enter 换行）…" required></textarea>
+      <div class="row" style="margin-top:12px">
+        <div style="flex:0 0 auto">
+          <button type="submit" id="btnSend">发送（流式）</button>
+        </div>
+        <div style="flex:0 0 auto">
+          <button type="button" class="secondary" id="btnStop" disabled>停止</button>
+        </div>
+      </div>
     </form>
   </div>
 
-  <div class="card" th:if="${resp != null}">
-    <h2>回答</h2>
-    <div class="mono" th:text="${resp.answer}">answer</div>
-
-    <h2>路由</h2>
-    <pre th:text="${resp.route}">route</pre>
-    <p class="muted">
-      sessionId =
-      <span class="mono" th:text="${resp.sessionId}">uuid</span>
-    </p>
-
-    <h2>引用来源 sources</h2>
+  <div class="card" id="metaCard" hidden>
+    <h2>本轮路由 / 引用</h2>
+    <div id="routeBox" class="mono"></div>
+    <div id="flagsBox" class="muted" style="margin-top:8px"></div>
+    <h3>sources</h3>
     <table>
-      <thead>
-      <tr><th>标题</th><th>分数</th><th>摘要</th></tr>
-      </thead>
-      <tbody>
-      <tr th:each="s : ${resp.sources}">
-        <td th:text="${s.title}">title</td>
-        <td th:text="${s.score}">0.0</td>
-        <td th:text="${s.snippet}">snippet</td>
-      </tr>
-      <tr th:if="${#lists.isEmpty(resp.sources)}">
-        <td colspan="3" class="muted">无 sources（闲聊或未命中知识库）</td>
-      </tr>
-      </tbody>
+      <thead><tr><th>标题</th><th>分数</th><th>摘要</th></tr></thead>
+      <tbody id="sourcesBody"></tbody>
     </table>
   </div>
 </div>
+
+<script th:inline="javascript">
+(function () {
+  const STORAGE_KEY = 'csai.admin.sessionId';
+  const messagesEl = document.getElementById('messages');
+  const statusBar = document.getElementById('statusBar');
+  const form = document.getElementById('chatForm');
+  const input = document.getElementById('messageInput');
+  const btnSend = document.getElementById('btnSend');
+  const btnStop = document.getElementById('btnStop');
+  const btnNew = document.getElementById('btnNewSession');
+  const sessionLabel = document.getElementById('sessionIdLabel');
+  const metaCard = document.getElementById('metaCard');
+  const routeBox = document.getElementById('routeBox');
+  const flagsBox = document.getElementById('flagsBox');
+  const sourcesBody = document.getElementById('sourcesBody');
+
+  let sessionId = localStorage.getItem(STORAGE_KEY) || null;
+  let abortController = null;
+  let streaming = false;
+
+  function refreshSessionLabel() {
+    sessionLabel.textContent = sessionId || '（新会话）';
+  }
+  refreshSessionLabel();
+
+  function setStatus(text, kind) {
+    statusBar.textContent = text;
+    statusBar.className = 'status-bar ' + (kind || 'muted');
+  }
+
+  function appendBubble(role, text) {
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-bubble chat-' + role;
+    const label = document.createElement('div');
+    label.className = 'chat-role';
+    label.textContent = role === 'user' ? '用户' : '助手';
+    const body = document.createElement('div');
+    body.className = 'chat-text';
+    body.textContent = text || '';
+    wrap.appendChild(label);
+    wrap.appendChild(body);
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return body;
+  }
+
+  function setBusy(busy) {
+    streaming = busy;
+    btnSend.disabled = busy;
+    btnStop.disabled = !busy;
+    input.disabled = busy;
+  }
+
+  function renderMeta(meta) {
+    if (!meta) {
+      metaCard.hidden = true;
+      return;
+    }
+    metaCard.hidden = false;
+    if (meta.sessionId) {
+      sessionId = meta.sessionId;
+      localStorage.setItem(STORAGE_KEY, sessionId);
+      refreshSessionLabel();
+    }
+    const route = meta.route || meta;
+    routeBox.textContent = JSON.stringify(route, null, 2);
+    const flags = [];
+    if (meta.degraded) flags.push('degraded: ' + (meta.degradedReasons || []).join(', '));
+    if (meta.handoff) flags.push('handoff: ' + (meta.handoffReason || ''));
+    flagsBox.textContent = flags.length ? flags.join(' · ') : 'degraded=false · handoff=false';
+    sourcesBody.innerHTML = '';
+    const sources = meta.sources || [];
+    if (!sources.length) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td colspan="3" class="muted">无 sources</td>';
+      sourcesBody.appendChild(tr);
+    } else {
+      sources.forEach(function (s) {
+        const tr = document.createElement('tr');
+        const t1 = document.createElement('td'); t1.textContent = s.title || '';
+        const t2 = document.createElement('td'); t2.textContent = s.score != null ? s.score : '';
+        const t3 = document.createElement('td'); t3.textContent = s.snippet || s.content || '';
+        tr.appendChild(t1); tr.appendChild(t2); tr.appendChild(t3);
+        sourcesBody.appendChild(tr);
+      });
+    }
+  }
+
+  /**
+   * Parse SSE from a fetch ReadableStream (POST /api/v1/chat/stream).
+   */
+  async function consumeSse(response, onEvent) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let eventName = 'message';
+    let dataLines = [];
+
+    function flushEvent() {
+      if (!dataLines.length && eventName === 'message') return;
+      const data = dataLines.join('\n');
+      onEvent(eventName || 'message', data);
+      eventName = 'message';
+      dataLines = [];
+    }
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split(/\r?\n/);
+      buffer = parts.pop() || '';
+      for (let i = 0; i < parts.length; i++) {
+        const line = parts[i];
+        if (line === '') {
+          flushEvent();
+          continue;
+        }
+        if (line.startsWith('event:')) {
+          eventName = line.slice(6).trim();
+        } else if (line.startsWith('data:')) {
+          dataLines.push(line.slice(5).replace(/^ /, ''));
+        }
+        // ignore id:/retry: comments
+      }
+    }
+    if (buffer) {
+      // trailing without blank line
+      const line = buffer;
+      if (line.startsWith('event:')) eventName = line.slice(6).trim();
+      else if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''));
+    }
+    flushEvent();
+  }
+
+  function parsePossiblyJson(data) {
+    if (data == null) return data;
+    const t = data.trim();
+    if ((t.startsWith('{') && t.endsWith('}')) || (t.startsWith('[') && t.endsWith(']'))) {
+      try { return JSON.parse(t); } catch (e) { return data; }
+    }
+    // Spring may wrap strings with quotes
+    if (t.startsWith('"') && t.endsWith('"')) {
+      try { return JSON.parse(t); } catch (e) { return data; }
+    }
+    return data;
+  }
+
+  async function sendMessage(text) {
+    appendBubble('user', text);
+    const assistantEl = appendBubble('assistant', '');
+    assistantEl.classList.add('streaming');
+    setBusy(true);
+    setStatus('连接中…', 'status-busy');
+    metaCard.hidden = true;
+    abortController = new AbortController();
+
+    try {
+      const body = { message: text, sessionId: sessionId || null, options: null };
+      const response = await fetch('/api/v1/chat/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream'
+        },
+        body: JSON.stringify(body),
+        signal: abortController.signal
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error('HTTP ' + response.status + ' ' + errText.slice(0, 200));
+      }
+
+      let full = '';
+      await consumeSse(response, function (event, raw) {
+        const data = parsePossiblyJson(raw);
+        if (event === 'status') {
+          const msg = (data && data.message) ? data.message : String(raw);
+          const phase = (data && data.phase) ? data.phase : '';
+          setStatus((phase ? '[' + phase + '] ' : '') + msg, phase === 'error' ? 'status-err' : 'status-busy');
+        } else if (event === 'delta') {
+          const token = typeof data === 'string' ? data : String(data == null ? '' : data);
+          full += token;
+          assistantEl.textContent = full;
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        } else if (event === 'meta') {
+          renderMeta(typeof data === 'object' ? data : parsePossiblyJson(raw));
+        }
+      });
+
+      assistantEl.classList.remove('streaming');
+      if (!full) {
+        assistantEl.textContent = assistantEl.textContent || '（无文本输出）';
+      }
+      setStatus('完成', 'status-ok');
+    } catch (err) {
+      assistantEl.classList.remove('streaming');
+      if (err.name === 'AbortError') {
+        setStatus('已停止', 'muted');
+        if (!assistantEl.textContent) assistantEl.textContent = '（已取消）';
+      } else {
+        setStatus('错误：' + err.message, 'status-err');
+        if (!assistantEl.textContent) assistantEl.textContent = '请求失败：' + err.message;
+      }
+    } finally {
+      setBusy(false);
+      abortController = null;
+      input.focus();
+    }
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (streaming) return;
+    const text = (input.value || '').trim();
+    if (!text) return;
+    input.value = '';
+    sendMessage(text);
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  btnStop.addEventListener('click', function () {
+    if (abortController) abortController.abort();
+  });
+
+  btnNew.addEventListener('click', function () {
+    if (streaming) return;
+    sessionId = null;
+    localStorage.removeItem(STORAGE_KEY);
+    refreshSessionLabel();
+    messagesEl.innerHTML = '';
+    metaCard.hidden = true;
+    setStatus('已开启新会话', 'muted');
+  });
+
+  input.focus();
+})();
+</script>
 </body>
 </html>

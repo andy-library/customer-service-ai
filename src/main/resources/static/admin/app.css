@@ -62,3 +62,66 @@ pre, .mono {
   border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: #121b28;
 }
 .tile h3 { margin: 0 0 8px; }
+
+/* Streaming chat UI */
+.chat-panel { display: flex; flex-direction: column; gap: 12px; }
+.status-bar {
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #0d1520;
+  border: 1px solid var(--border);
+}
+.status-busy { color: #7eb6ff; border-color: #2a4a75; }
+.status-ok { color: var(--ok); border-color: #1f5a3d; }
+.status-err { color: var(--err); border-color: #6a2a2a; }
+.chat-messages {
+  min-height: 280px;
+  max-height: 52vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 4px;
+}
+.chat-bubble {
+  max-width: 92%;
+  border-radius: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+}
+.chat-user {
+  align-self: flex-end;
+  background: #1a3355;
+  border-color: #2d5a8c;
+}
+.chat-assistant {
+  align-self: flex-start;
+  background: #121b28;
+}
+.chat-role {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.chat-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+}
+.chat-text.streaming::after {
+  content: "▍";
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--accent);
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+.chat-composer textarea { min-height: 72px; }
+button:disabled, .btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
