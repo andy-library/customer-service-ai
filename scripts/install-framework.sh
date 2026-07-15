@@ -29,11 +29,12 @@ install_parent_and_starters() {
   (cd "${PARENT_DIR}" && "${mvn_install[@]}")
 
   SOURCE_ROOT="${CLONE_DIR}/SourceCode"
+  # Order matters: later starters depend on earlier ones (e.g. web -> logging).
   for starter in \
     microservice-framework-common-starter \
     microservice-framework-json-starter \
-    microservice-framework-web-starter \
     microservice-framework-logging-starter \
+    microservice-framework-web-starter \
     microservice-framework-observability-starter \
     microservice-framework-async-starter \
     microservice-framework-database-starter \
