@@ -1,11 +1,15 @@
 # 真实模型联调指南
 
+> **阿里云百炼 + glm-5.1 + CC Switch**：见专用文档  
+> [`BAILIAN-GLM-配置.md`](./BAILIAN-GLM-配置.md)
+
 ## 前提
 
 - 已完成 mock 主链路（见 `PROGRESS.md`）
 - 具备 **OpenAI-compatible** 的 Chat + Embedding 服务  
-  - 支持：OpenAI、DeepSeek、通义 compatible-mode、智谱 OpenAI 协议、自建网关等  
-  - **不支持**：Anthropic Claude 原生 API（协议不同；需兼容网关转换）
+  - 支持：OpenAI、DeepSeek、通义/百炼 `compatible-mode`、智谱 OpenAI 协议、自建网关等  
+  - **不支持直连**：`https://dashscope.aliyuncs.com/apps/anthropic`（Anthropic 协议，给 Claude Code / CC Switch 用）  
+  - 百炼 Chat 请用：`https://dashscope.aliyuncs.com/compatible-mode/v1`
 - PostgreSQL + pgvector 已启动（`docker compose up -d`）
 
 ## 步骤

@@ -4,9 +4,9 @@
 |------|-----|
 | 最后更新 | 2026-07-15 |
 | 当前分支 | `feat/csai-mvp` |
-| 当前任务 | **真实模型联调 — 等待用户配置 .env** |
-| 当前步骤 | 联调工具已就绪；需用户填写 OpenAI-compatible Key 后执行 run-real + smoke |
-| 阻塞 | 仓库内无 `.env`；本机环境仅见 ANTHROPIC_API_KEY（**非** OpenAI 兼容，本 MVP 不能直接用） |
+| 当前任务 | **百炼 glm-5.1 配置说明已给出；等待用户填 Key 并启动** |
+| 当前步骤 | 用户按 BAILIAN-GLM-配置.md 写 .env（compatible-mode + glm-5.1）后 reply 继续 smoke |
+| 阻塞 | 无配置阻塞；需用户本地 `.env` 填 API Key（Anthropic URL 不能给 Spring 直连） |
 
 ## 已完成
 
