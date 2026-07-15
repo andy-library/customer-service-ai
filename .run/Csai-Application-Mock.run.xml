@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- Fallback for IntelliJ Community without Spring Boot run type -->
+  <configuration default="false" name="Csai · Application Mock" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.enterprise.csai.CustomerServiceAiApplication" />
+    <module name="customer-service-ai" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.profiles.active=mock --server.port=8081" />
+    <option name="VM_PARAMETERS" value="-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai -Dspring.profiles.active=mock" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

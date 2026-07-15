@@ -8,6 +8,9 @@ target/
 
 # IDE
 .idea/
+# keep shared run configs if someone stores them under .idea (default: use /.run)
+!.idea/runConfigurations/
+!.idea/runConfigurations/**
 *.iml
 .classpath
 .project
@@ -15,6 +18,9 @@ target/
 .vscode/
 *.swp
 *~
+# IntelliJ shared run configs (committed)
+!.run/
+!.run/**
 
 # OS
 .DS_Store

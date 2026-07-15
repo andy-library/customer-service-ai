@@ -1,0 +1,40 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Csai · Local Real (llama + Dify)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <option name="ACTIVE_PROFILES" value="" />
+    <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+    <module name="customer-service-ai" />
+    <option name="PROGRAM_PARAMETERS" value="--server.port=8081" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.enterprise.csai.CustomerServiceAiApplication" />
+    <option name="VM_PARAMETERS" value="-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <!-- Prefer EnvFile plugin / IDEA env file support pointing at $PROJECT_DIR$/.env -->
+    <envs>
+      <env name="DB_HOST" value="localhost" />
+      <env name="DB_PORT" value="5432" />
+      <env name="DB_NAME" value="csai" />
+      <env name="DB_USER" value="csai" />
+      <env name="DB_PASSWORD" value="csai" />
+      <env name="CS_AI_MODEL_SOURCE" value="local" />
+      <env name="CS_AI_KNOWLEDGE_PROVIDER" value="dify" />
+      <env name="CS_AI_DEFAULT_BASE_URL" value="http://127.0.0.1:18080/v1" />
+      <env name="CS_AI_DEFAULT_API_KEY" value="sk-local" />
+      <env name="CS_AI_CLASSIFIER_MODEL" value="local-qwen" />
+      <env name="CS_AI_ANSWER_STRONG_MODEL" value="local-qwen" />
+      <env name="CS_AI_ANSWER_FAST_MODEL" value="local-qwen" />
+      <env name="CS_AI_EMBEDDING_BASE_URL" value="http://127.0.0.1:18081/v1" />
+      <env name="CS_AI_EMBEDDING_API_KEY" value="sk-local" />
+      <env name="CS_AI_EMBEDDING_MODEL" value="local-bge-m3" />
+      <env name="CS_AI_EMBEDDING_DIMENSIONS" value="1024" />
+      <env name="DIFY_BASE_URL" value="http://127.0.0.1:15001/v1" />
+      <!-- Fill in Run Configuration → Environment variables (do not commit secrets) -->
+      <env name="DIFY_API_KEY" value="" />
+      <env name="DIFY_DATASET_ID" value="" />
+      <env name="CSAI_SECURITY_ENABLED" value="false" />
+      <env name="CSAI_RATE_LIMIT_ENABLED" value="true" />
+      <env name="SERVER_PORT" value="8081" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

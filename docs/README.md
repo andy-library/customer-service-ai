@@ -10,6 +10,7 @@ Author / maintainer: **andy yang**
 |----------|----------|-------------|
 | [../README.md](../README.md) | Everyone | Project overview & quick start |
 | [getting-started.md](getting-started.md) | Developers | Install, configure, run |
+| [development/IDEA-启动配置.md](development/IDEA-启动配置.md) | Developers | IntelliJ IDEA run configurations |
 | [architecture.md](architecture.md) | Developers / architects | System design overview |
 | [configuration.md](configuration.md) | Operators | Environment variables & profiles |
 | [operations/RUNBOOK.md](operations/RUNBOOK.md) | SRE / ops | Run, health, incidents |

@@ -202,6 +202,16 @@ customer-service-ai/
 
 ---
 
+## IntelliJ IDEA
+
+Shared run configurations are under [`.run/`](.run/). After opening the project:
+
+1. Import as Maven project, set **JDK 21**
+2. Start Postgres: `docker compose up -d postgres`
+3. Run **Csai · Mock (offline)** or **Csai · Local Real (llama + Dify)**
+
+Full guide (Chinese): [docs/development/IDEA-启动配置.md](docs/development/IDEA-启动配置.md)
+
 ## Tests
 
 ```bash
