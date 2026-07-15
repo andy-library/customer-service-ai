@@ -126,11 +126,13 @@ csai:
     # Local/dev default off for easy smoke; enable via CSAI_SECURITY_ENABLED=true or prod profile
     enabled: ${CSAI_SECURITY_ENABLED:false}
     api-keys:
+      # If env is unset, use local-dev placeholders (not production secrets).
+      # Empty env values would override defaults — leave vars unset rather than "".
       - id: demo-client
-        key: ${CSAI_API_KEY_CLIENT:csai-client-dev-key}
+        key: ${CSAI_API_KEY_CLIENT:local-dev-client}
         roles: [CLIENT]
       - id: demo-admin
-        key: ${CSAI_API_KEY_ADMIN:csai-admin-dev-key}
+        key: ${CSAI_API_KEY_ADMIN:local-dev-admin}
         roles: [ADMIN, CLIENT]
     rate-limit:
       enabled: ${CSAI_RATE_LIMIT_ENABLED:true}

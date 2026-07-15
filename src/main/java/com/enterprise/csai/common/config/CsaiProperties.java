@@ -204,10 +204,9 @@ public class CsaiProperties {
     }
 
     public static class ApiKeyConfig {
-        @NotBlank
-        private String id;
-        @NotBlank
-        private String key;
+        /** May be blank when security is disabled; filter ignores empty keys. */
+        private String id = "";
+        private String key = "";
         private List<String> roles = List.of("CLIENT");
 
         public String getId() {
