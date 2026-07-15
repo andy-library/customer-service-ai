@@ -54,6 +54,40 @@ This service is the **orchestration layer** for AI customer service. It does **n
 
 ---
 
+## Screenshots
+
+Admin console UI (local integration example, for community reference):
+
+### Home
+
+![Admin home](images/admin-home.png)
+
+### Streaming chat test
+
+Intent classification → knowledge retrieval → streaming generation; session continuity and sources.
+
+![Streaming chat](images/admin-chat.png)
+
+### Knowledge (Dify)
+
+Dify Dataset integration status and retrieval debug entry.
+
+![Knowledge](images/admin-knowledge.png)
+
+### Retrieval hits
+
+Example of knowledge hit snippets.
+
+![Retrieval hits](images/admin-retrieval.png)
+
+### Models & routing
+
+Registered models and intent → answer model mapping (read-only).
+
+![Models and routing](images/admin-models.png)
+
+---
+
 ## Architecture
 
 ```text

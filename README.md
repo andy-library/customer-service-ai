@@ -55,6 +55,40 @@
 
 ---
 
+## 界面预览
+
+管理后台截图（本地联调示例，供社区参考）：
+
+### 首页
+
+![管理后台首页](images/admin-home.png)
+
+### 流式对话测试
+
+意图分类 → 知识检索 → 模型流式生成；支持会话续聊与 sources 展示。
+
+![流式对话测试](images/admin-chat.png)
+
+### 知识库接入（Dify）
+
+对接 Dify Dataset，展示配置状态与检索调试入口。
+
+![知识库接入](images/admin-knowledge.png)
+
+### 知识召回命中
+
+检索结果与片段命中示例。
+
+![知识召回命中](images/admin-retrieval.png)
+
+### 模型与路由
+
+已注册模型及意图 → 回答模型映射（只读）。
+
+![模型与路由](images/admin-models.png)
+
+---
+
 ## 架构
 
 ```text
@@ -249,6 +283,7 @@ customer-service-ai/
 ├── scripts/                             # 安装、冒烟、本地 LLM 脚本
 ├── docs/                                # 文档
 ├── samples/                             # 示例知识文本
+├── images/                              # 管理后台 UI 截图
 ├── .run/                                # IDEA 共享运行配置
 ├── docker-compose.yml
 ├── Dockerfile
