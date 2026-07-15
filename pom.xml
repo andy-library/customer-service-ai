@@ -51,7 +51,7 @@
     </issueManagement>
 
     <properties>
-        <spring-ai.version>1.1.8</spring-ai.version>
+        <spring-ai.version>2.0.0</spring-ai.version>
         <springdoc.version>2.6.0</springdoc.version>
         <pdfbox.version>3.0.3</pdfbox.version>
     </properties>
