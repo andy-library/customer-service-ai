@@ -16,7 +16,7 @@
     <version>0.2.0-rc.1</version>
     <name>customer-service-ai</name>
     <description>Enterprise intelligent customer service (quasi-production) on microservice-framework + Spring AI</description>
-    <url>https://github.com/andy-yang/customer-service-ai</url>
+    <url>https://github.com/andy-library/customer-service-ai</url>
     <inceptionYear>2026</inceptionYear>
 
     <licenses>
@@ -39,15 +39,15 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/andy-yang/customer-service-ai.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/andy-yang/customer-service-ai.git</developerConnection>
-        <url>https://github.com/andy-yang/customer-service-ai</url>
+        <connection>scm:git:https://github.com/andy-library/customer-service-ai.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/andy-library/customer-service-ai.git</developerConnection>
+        <url>https://github.com/andy-library/customer-service-ai</url>
         <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/andy-yang/customer-service-ai/issues</url>
+        <url>https://github.com/andy-library/customer-service-ai/issues</url>
     </issueManagement>
 
     <properties>

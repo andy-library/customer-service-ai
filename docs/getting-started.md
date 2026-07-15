@@ -17,7 +17,7 @@ This guide gets **customer-service-ai** running on your machine.
 ## 2. Clone
 
 ```bash
-git clone https://github.com/andy-yang/customer-service-ai.git
+git clone https://github.com/andy-library/customer-service-ai.git
 cd customer-service-ai
 ```
 
