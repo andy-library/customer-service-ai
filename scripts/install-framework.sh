@@ -22,8 +22,11 @@ install_parent_and_starters() {
     exit 1
   fi
 
+  # Skip unit + invoker ITs: we only need artifacts in local m2 for consumer builds (CI/dev).
+  local mvn_install=(mvn clean install -DskipTests -Dinvoker.skip=true -B)
+
   echo "Installing microservice-framework parent (${FRAMEWORK_VERSION}) ..."
-  (cd "${PARENT_DIR}" && mvn clean install -DskipTests -B)
+  (cd "${PARENT_DIR}" && "${mvn_install[@]}")
 
   SOURCE_ROOT="${CLONE_DIR}/SourceCode"
   for starter in \
@@ -38,7 +41,7 @@ install_parent_and_starters() {
   do
     if [[ -f "${SOURCE_ROOT}/${starter}/pom.xml" ]]; then
       echo "Installing ${starter} ..."
-      (cd "${SOURCE_ROOT}/${starter}" && mvn clean install -DskipTests -B)
+      (cd "${SOURCE_ROOT}/${starter}" && "${mvn_install[@]}")
     fi
   done
 }
