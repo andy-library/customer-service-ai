@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>对话测试台</title>
+  <link rel="stylesheet" th:href="@{/admin/app.css}"/>
+</head>
+<body>
+<div class="layout">
+  <div class="nav">
+    <div class="brand">对话测试</div>
+    <a th:href="@{/admin}">首页</a>
+    <a th:href="@{/admin/knowledge}">知识库</a>
+    <a th:href="@{/admin/chat}">对话测试</a>
+    <a th:href="@{/admin/models}">模型与路由</a>
+  </div>
+
+  <div class="card">
+    <h1>对话测试台</h1>
+    <p class="muted">会触发意图分类 → 模型选择 →（可选）RAG → 生成回答。</p>
+    <p th:if="${error}" class="flash-err" th:text="${error}"></p>
+    <form th:action="@{/admin/chat}" method="post">
+      <label>用户问题</label>
+      <textarea name="message" required th:text="${messageText}"></textarea>
+      <p style="margin-top:12px"><button type="submit">发送</button></p>
+    </form>
+  </div>
+
+  <div class="card" th:if="${resp != null}">
+    <h2>回答</h2>
+    <div class="mono" th:text="${resp.answer}">answer</div>
+
+    <h2>路由</h2>
+    <pre th:text="${resp.route}">route</pre>
+    <p class="muted">
+      sessionId =
+      <span class="mono" th:text="${resp.sessionId}">uuid</span>
+    </p>
+
+    <h2>引用来源 sources</h2>
+    <table>
+      <thead>
+      <tr><th>标题</th><th>分数</th><th>摘要</th></tr>
+      </thead>
+      <tbody>
+      <tr th:each="s : ${resp.sources}">
+        <td th:text="${s.title}">title</td>
+        <td th:text="${s.score}">0.0</td>
+        <td th:text="${s.snippet}">snippet</td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(resp.sources)}">
+        <td colspan="3" class="muted">无 sources（闲聊或未命中知识库）</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>

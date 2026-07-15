@@ -10,11 +10,14 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * Registers one OpenAI-compatible {@link ChatModel} per enabled csai.models entry.
+ * Disabled under {@code mock} profile (see {@code MockModelConfiguration}).
  */
 @Configuration
+@Profile("!mock")
 public class ModelGatewayConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(ModelGatewayConfiguration.class);

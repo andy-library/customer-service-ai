@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>模型与路由</title>
+  <link rel="stylesheet" th:href="@{/admin/app.css}"/>
+</head>
+<body>
+<div class="layout">
+  <div class="nav">
+    <div class="brand">模型与路由</div>
+    <a th:href="@{/admin}">首页</a>
+    <a th:href="@{/admin/knowledge}">知识库</a>
+    <a th:href="@{/admin/chat}">对话测试</a>
+    <a th:href="@{/admin/models}">模型与路由</a>
+  </div>
+
+  <div class="card">
+    <h1>已注册模型（脱敏）</h1>
+    <p class="muted">分类模型：
+      <span class="mono" th:text="${classifierModelId}">classifier</span>
+      · 默认回答模型：
+      <span class="mono" th:text="${defaultAnswerModelId}">answer</span>
+    </p>
+    <table>
+      <thead>
+      <tr><th>ID</th><th>名称</th><th>模型名</th><th>角色</th><th>启用</th></tr>
+      </thead>
+      <tbody>
+      <tr th:each="m : ${models}">
+        <td class="mono" th:text="${m.id}">id</td>
+        <td th:text="${m.displayName}">name</td>
+        <td class="mono" th:text="${m.modelName}">model</td>
+        <td th:text="${m.role}">ANSWER</td>
+        <td th:text="${m.enabled}">true</td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(models)}">
+        <td colspan="5" class="muted">尚无注册模型（检查 csai.models 配置与启动日志）</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>意图 → 模型映射</h2>
+    <table>
+      <thead>
+      <tr><th>意图</th><th>需要知识库</th><th>回答模型</th></tr>
+      </thead>
+      <tbody>
+      <tr th:each="i : ${intents}">
+        <td class="mono" th:text="${i.intent}">PRODUCT</td>
+        <td th:text="${i.requiresKnowledge}">true</td>
+        <td class="mono" th:text="${i.answerModelId}">answer-strong</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>

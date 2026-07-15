@@ -1,7 +1,17 @@
-# Offline / CI profile — real LLM endpoints are replaced by mock beans (Task 9).
+# Offline / CI profile — deterministic models + in-memory vector store (no external LLM).
+# Still requires PostgreSQL for business tables (Flyway). Start with: docker compose up -d
 spring:
   main:
     allow-bean-definition-overriding: true
+  ai:
+    openai:
+      api-key: mock-key
+      base-url: http://127.0.0.1:9
+    vectorstore:
+      pgvector:
+        # Prefer mock VectorStore bean (@Primary); keep dimensions aligned if auto-config loads.
+        initialize-schema: false
+        dimensions: 1536
 
 logging:
   level:

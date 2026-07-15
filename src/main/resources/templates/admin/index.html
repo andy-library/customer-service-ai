@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>智能客服管理台</title>
+  <link rel="stylesheet" th:href="@{/admin/app.css}"/>
+</head>
+<body>
+<div class="layout">
+  <div class="nav">
+    <div class="brand">Customer Service AI</div>
+    <a th:href="@{/admin}">首页</a>
+    <a th:href="@{/admin/knowledge}">知识库</a>
+    <a th:href="@{/admin/chat}">对话测试</a>
+    <a th:href="@{/admin/models}">模型与路由</a>
+  </div>
+
+  <div class="card">
+    <h1>智能客服管理台</h1>
+    <p class="muted">基于 microservice-framework + Spring AI 的企业智能客服 MVP。</p>
+    <div class="grid">
+      <div class="tile">
+        <h3>知识库</h3>
+        <p class="muted">上传 PDF/MD/TXT，向量化入库，支持检索引用。</p>
+        <a class="btn" th:href="@{/admin/knowledge}">进入</a>
+      </div>
+      <div class="tile">
+        <h3>对话测试</h3>
+        <p class="muted">验证意图路由、模型选择与 RAG 引用来源。</p>
+        <a class="btn" th:href="@{/admin/chat}">进入</a>
+      </div>
+      <div class="tile">
+        <h3>模型与路由</h3>
+        <p class="muted">查看已注册模型与意图映射（只读）。</p>
+        <a class="btn" th:href="@{/admin/models}">进入</a>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
