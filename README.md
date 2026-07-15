@@ -4,6 +4,7 @@
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Spring AI](https://img.shields.io/badge/Spring%20AI-1.1.x-green.svg)](https://spring.io/projects/spring-ai)
+[![CI](https://github.com/andy-library/customer-service-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/andy-library/customer-service-ai/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/andy-library/customer-service-ai?include_prereleases)](https://github.com/andy-library/customer-service-ai/releases)
 
 [English](README.en.md) | **简体中文**

@@ -8,6 +8,10 @@ updates:
     labels:
       - dependencies
       - ci
+    # Avoid surprise major bumps of Actions while solo-maintaining.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: maven
     directory: "/"
