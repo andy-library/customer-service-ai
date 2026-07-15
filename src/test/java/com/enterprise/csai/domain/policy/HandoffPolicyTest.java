@@ -29,4 +29,15 @@ class HandoffPolicyTest {
         assertThat(policy.evaluate(d, "什么").handoff()).isTrue();
         assertThat(policy.evaluate(d, "什么").reason()).isEqualTo("LOW_CONFIDENCE");
     }
+
+    @Test
+    void classifierFailureDoesNotForceHandoff() {
+        CsaiProperties props = new CsaiProperties();
+        props.getRouter().setConfidenceThreshold(0.55);
+        props.getRouter().setHandoffOnUnknown(true);
+        HandoffPolicy policy = new HandoffPolicy(props);
+        RoutingDecision d = new RoutingDecision(
+                IntentType.UNKNOWN, 0.0, "classifier_failed", "c", "a", true);
+        assertThat(policy.evaluate(d, "如何退款").handoff()).isFalse();
+    }
 }

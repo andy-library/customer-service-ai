@@ -20,6 +20,10 @@ public class HandoffPolicy {
         if (userRequestsHuman(userMessage)) {
             return HandoffDecision.yes("USER_REQUEST");
         }
+        // Classifier outage is degraded, not an immediate handoff — still try RAG answer.
+        if ("classifier_failed".equals(decision.reason())) {
+            return HandoffDecision.no();
+        }
         double threshold = properties.getRouter().getConfidenceThreshold();
         if (decision.confidence() < threshold) {
             return HandoffDecision.yes("LOW_CONFIDENCE");

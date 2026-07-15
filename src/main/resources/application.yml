@@ -137,9 +137,10 @@ csai:
       requests-per-minute: ${CSAI_RATE_LIMIT_RPM:120}
 
   resilience:
-    classifier-timeout-ms: ${CSAI_CLASSIFIER_TIMEOUT_MS:15000}
-    answer-timeout-ms: ${CSAI_ANSWER_TIMEOUT_MS:120000}
-    dify-timeout-ms: ${CSAI_DIFY_TIMEOUT_MS:5000}
+    # Local 35B cold-start often needs >15s; override lower for cloud if desired
+    classifier-timeout-ms: ${CSAI_CLASSIFIER_TIMEOUT_MS:90000}
+    answer-timeout-ms: ${CSAI_ANSWER_TIMEOUT_MS:180000}
+    dify-timeout-ms: ${CSAI_DIFY_TIMEOUT_MS:8000}
     stream-pool-size: 16
     stream-queue-size: 100
 
