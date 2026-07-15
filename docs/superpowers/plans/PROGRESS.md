@@ -7,68 +7,93 @@
 |------|-----|
 | 最后更新 | 2026-07-15 |
 | 当前分支 | `feat/csai-mvp` |
-| 最后提交 | `d22f783` scaffold + ping contract |
-| 当前任务 | **Task 3** — 模型网关 |
-| 当前步骤 | 即将实现 ModelRegistry / ModelGateway |
-| 阻塞 | 无 |
+| 最后提交 | 见下方 git log；本文件更新后会再 commit |
+| 当前任务 | **Task 6** — 对话编排 ChatOrchestrator |
+| 当前步骤 | 下一步实现 chat 包（session/message/编排/API） |
+| 阻塞 | 无（Testcontainers 全量 IT 需修好 Docker API 版本后补跑） |
 | 规格版本 | 设计 v1.1 + 实现计划 |
 
 ---
 
-## 如何续跑
+## 如何续跑（新会话必做）
 
-1. 读本文件 + 实现计划  
-2. 从「当前任务 / 当前步骤」继续  
-3. 完成 Step 后更新本文件并 commit  
-4. Docker（本机）：`export DOCKER_HOST=unix://$HOME/.rd/docker.sock`（Rancher Desktop）  
-   Testcontainers 若报 API version 过旧，需升级 testcontainers 或 Docker 客户端  
+```bash
+cd "/Volumes/Development HD/SourceCode/Spring AI"
+git checkout feat/csai-mvp
+# 1) 读进度
+cat docs/superpowers/plans/PROGRESS.md
+# 2) 读计划中对应 Task
+# 3) 验证：
+./scripts/install-framework.sh
+mvn -Dtest=PomCoordinatesSanityTest,PingWebMvcTest,ModelRegistryTest,IntentJsonParserTest,RoutingServiceTest,TextExtractionServiceTest test
+# 4) 从「当前任务」继续编码
+```
+
+**Docker（本机 Rancher Desktop）：**
+```bash
+export DOCKER_HOST=unix://$HOME/.rd/docker.sock
+# Testcontainers 若报 client API 过旧，需升级 testcontainers 或 docker 客户端后再跑 ApiResponseContractTest
+```
 
 ---
 
 ## 任务总览
 
-| Task | 名称 | 状态 |
-|------|------|------|
-| 1 | 框架安装脚本 + Maven 骨架 + Compose | ✅ done |
-| 2 | CsaiProperties + Flyway + ApiResponse 契约 | ✅ done |
-| 3 | 模型网关 ModelRegistry/Gateway | 🔄 in_progress |
-| 4 | LLM 意图路由 | ⏳ pending |
-| 5 | 知识库入库 + PgVector 检索 | ⏳ pending |
-| 6 | 对话编排（同步 + 会话） | ⏳ pending |
-| 7 | SSE 流式对话 | ⏳ pending |
-| 8 | Thymeleaf 管理后台 | ⏳ pending |
-| 9 | 默认模型配置 + mock profile + README | ⏳ pending |
-| 10 | 端到端验收 + 文档收尾 | ⏳ pending |
+| Task | 名称 | 状态 | 备注 |
+|------|------|------|------|
+| 1 | 框架安装 + Maven 骨架 + Compose | ✅ done | d22f783 起 |
+| 2 | CsaiProperties + Flyway + ApiResponse | ✅ done | Ping 用对象包装 |
+| 3 | 模型网关 | ✅ done | 7b581bb |
+| 4 | LLM 意图路由 | ✅ done | 同 7b581bb 含 router |
+| 5 | 知识库 RAG | ✅ done（单元） | 入库/检索代码已齐；IT 待 Docker |
+| 6 | 对话编排 | 🔄 **下一步** | |
+| 7 | SSE 流式 | ⏳ pending | |
+| 8 | Admin UI | ⏳ pending | |
+| 9 | mock profile + README | ⏳ pending | |
+| 10 | 验收 | ⏳ pending | |
 
 ---
 
-## Task 1–2 已完成要点
+## 已实现代码地图
 
-- parent: microservice-framework-starter-parent 1.0.0-alpha.1  
-- install-framework.sh patch BOM `${project.version}`  
-- enforcer enforce-versions phase=none（Jackson 冲突）  
-- exclude shardingsphere  
-- Flyway V1 业务表  
-- Ping 返回对象以触发 ApiResponse 包装（裸 String 不包装）  
-- 测试：`PomCoordinatesSanityTest` + `PingWebMvcTest` 通过  
-- `ApiResponseContractTest` 需可用 Testcontainers（当前常 skip）  
+```
+src/main/java/com/enterprise/csai/
+  CustomerServiceAiApplication.java
+  common/{api/PingController, config/CsaiProperties, error/CsaiErrorCodes}
+  modelgateway/{ModelRole, ModelView, ModelRegistry, ModelGateway, ModelGatewayService,
+                ModelGatewayConfiguration, api/ModelController}
+  router/{IntentType, ClassificationResult, IntentJsonParser, RoutingDecision,
+          RoutingService, api/RouterController}
+  knowledge/{Document*, TextExtractionService, DocumentIngestService,
+             KnowledgeSearchService, KnowledgeChunk, api/KnowledgeController}
+src/main/resources/
+  application.yml  (含 3 个默认模型 + 意图映射)
+  db/migration/V1__init_csai.sql
+samples/refund-policy.md
+```
 
-## Task 3 清单
+## 验证命令（当前应全绿）
 
-- [ ] ModelView / ModelRegistry / ModelGateway  
-- [ ] ModelGatewayConfiguration（多 OpenAI-compatible ChatModel）  
-- [ ] ModelController GET /api/v1/models  
-- [ ] ModelRegistryTest  
-- [ ] Commit  
+```bash
+mvn -Dtest=PomCoordinatesSanityTest,PingWebMvcTest,ModelRegistryTest,IntentJsonParserTest,RoutingServiceTest,TextExtractionServiceTest test
+# 期望: Tests run: 15, Failures: 0
+```
 
----
+## 关键技术债 / 约定
 
-## 关键决策 / 技术债
-
-见历史：BOM patch、enforcer skip、ShardingSphere 排除、裸 String 不包装。
+1. **starter-parent BOM**：`install-framework.sh` patch `${project.version}` → `1.0.0-alpha.1`  
+2. **enforcer enforce-versions**：业务 pom `phase=none`（Spring AI 1.1.8 vs Boot 3.3 Jackson）  
+3. **database-starter**：排除 `shardingsphere-jdbc`  
+4. **ApiResponse**：裸 `String` 不包装，Controller 须返回对象  
+5. **向量删除**：按 metadata `documentId` filter；失败仅 warn  
+6. **TokenTextSplitter**：用 builder `withChunkSize` / `withMinChunkSizeChars`（无独立 overlap 参数）  
+7. **全量 SpringBootTest + pgvector**：待修复 Testcontainers/Docker API  
 
 ## 会话日志
 
 | 时间 | 事件 |
 |------|------|
-| 2026-07-15 | Task 1–2 完成并提交 d22f783；进入 Task 3 |
+| 2026-07-15 | 创建进度记忆；开始实现 |
+| 2026-07-15 | Task1–2 完成 d22f783 |
+| 2026-07-15 | Task3–4 完成 7b581bb |
+| 2026-07-15 | Task5 知识库代码 + 单测通过；下一会话做 Task6 对话编排 |
