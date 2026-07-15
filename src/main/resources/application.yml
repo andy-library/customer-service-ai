@@ -47,7 +47,28 @@ framework:
         - /actuator/info
 
 csai:
-  models: []
+  models:
+    - id: classifier-default
+      display-name: Classifier
+      base-url: ${CS_AI_CLASSIFIER_BASE_URL:${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}}
+      api-key: ${CS_AI_CLASSIFIER_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-placeholder}}
+      model-name: ${CS_AI_CLASSIFIER_MODEL:gpt-4o-mini}
+      role: CLASSIFIER
+      enabled: true
+    - id: answer-strong
+      display-name: Answer Strong
+      base-url: ${CS_AI_ANSWER_STRONG_BASE_URL:${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}}
+      api-key: ${CS_AI_ANSWER_STRONG_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-placeholder}}
+      model-name: ${CS_AI_ANSWER_STRONG_MODEL:gpt-4o}
+      role: ANSWER
+      enabled: true
+    - id: answer-fast
+      display-name: Answer Fast
+      base-url: ${CS_AI_ANSWER_FAST_BASE_URL:${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}}
+      api-key: ${CS_AI_ANSWER_FAST_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-placeholder}}
+      model-name: ${CS_AI_ANSWER_FAST_MODEL:gpt-4o-mini}
+      role: ANSWER
+      enabled: true
   embedding:
     base-url: ${CS_AI_EMBEDDING_BASE_URL:${CS_AI_DEFAULT_BASE_URL:https://api.openai.com}}
     api-key: ${CS_AI_EMBEDDING_API_KEY:${CS_AI_DEFAULT_API_KEY:sk-placeholder}}
@@ -57,7 +78,13 @@ csai:
     classifier-model-id: classifier-default
     default-answer-model-id: answer-fast
     force-rag: false
-    intent-model-mapping: {}
+    intent-model-mapping:
+      PRODUCT: answer-strong
+      BILLING: answer-strong
+      TECH_SUPPORT: answer-strong
+      POLICY: answer-strong
+      CHITCHAT: answer-fast
+      UNKNOWN: answer-fast
   rag:
     top-k: 5
     similarity-threshold: 0.50
