@@ -7,6 +7,7 @@ public class ChatSessionEntity {
 
     private UUID id;
     private String title;
+    private String ownerId;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 
@@ -24,6 +25,14 @@ public class ChatSessionEntity {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
     }
 
     public OffsetDateTime getCreatedAt() {

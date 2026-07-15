@@ -5,7 +5,6 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +17,11 @@ public class ChatSessionRepository {
         ChatSessionEntity entity = new ChatSessionEntity();
         entity.setId(rs.getObject("id", UUID.class));
         entity.setTitle(rs.getString("title"));
+        try {
+            entity.setOwnerId(rs.getString("owner_id"));
+        } catch (Exception ignored) {
+            entity.setOwnerId(null);
+        }
         Timestamp created = rs.getTimestamp("created_at");
         Timestamp updated = rs.getTimestamp("updated_at");
         entity.setCreatedAt(created == null ? null : created.toInstant().atOffset(ZoneOffset.UTC));
@@ -33,11 +37,12 @@ public class ChatSessionRepository {
 
     public void insert(ChatSessionEntity entity) {
         jdbcTemplate.update("""
-                INSERT INTO cs_chat_session (id, title, created_at, updated_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO cs_chat_session (id, title, owner_id, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
                 """,
                 entity.getId(),
                 entity.getTitle(),
+                entity.getOwnerId(),
                 Timestamp.from(entity.getCreatedAt().toInstant()),
                 Timestamp.from(entity.getUpdatedAt().toInstant()));
     }

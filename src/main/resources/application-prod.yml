@@ -1,0 +1,28 @@
+# Production profile — force security and conservative limits
+csai:
+  security:
+    enabled: true
+    rate-limit:
+      enabled: true
+      requests-per-minute: ${CSAI_RATE_LIMIT_RPM:60}
+  guardrail:
+    require-evidence: true
+    block-injection-patterns: true
+  resilience:
+    classifier-timeout-ms: 15000
+    answer-timeout-ms: 60000
+    dify-timeout-ms: 5000
+
+logging:
+  level:
+    com.enterprise.csai: INFO
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

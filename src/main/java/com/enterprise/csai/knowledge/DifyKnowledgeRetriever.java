@@ -39,7 +39,19 @@ public class DifyKnowledgeRetriever implements KnowledgeRetriever {
     public DifyKnowledgeRetriever(CsaiProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
-        this.restClient = RestClient.builder().build();
+        long timeoutMs = Math.max(1000L, properties.getResilience().getDifyTimeoutMs());
+        this.restClient = RestClient.builder()
+                .requestFactory(clientHttpRequestFactory(timeoutMs))
+                .build();
+    }
+
+    private static org.springframework.http.client.SimpleClientHttpRequestFactory clientHttpRequestFactory(
+            long timeoutMs) {
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory =
+                new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout((int) Math.min(timeoutMs, Integer.MAX_VALUE));
+        factory.setReadTimeout((int) Math.min(timeoutMs, Integer.MAX_VALUE));
+        return factory;
     }
 
     @Override
@@ -49,35 +61,42 @@ public class DifyKnowledgeRetriever implements KnowledgeRetriever {
 
     @Override
     public List<KnowledgeChunk> search(String query, int topK) {
+        return searchDetailed(query, topK).chunks();
+    }
+
+    @Override
+    public KnowledgeSearchResult searchDetailed(String query, int topK) {
         CsaiProperties.DifyConfig dify = properties.getKnowledge().getDify();
         if (dify.getApiKey() == null || dify.getApiKey().isBlank()
                 || dify.getDatasetId() == null || dify.getDatasetId().isBlank()) {
             log.warn("Dify knowledge not configured (api-key/dataset-id empty); returning empty hits");
-            return List.of();
+            return KnowledgeSearchResult.degraded(List.of(), "DIFY_NOT_CONFIGURED");
         }
         int k = topK > 0 ? topK : dify.getTopK();
         try {
             List<KnowledgeChunk> hits = retrieve(dify, query, k);
             if (!hits.isEmpty()) {
-                return hits;
+                return KnowledgeSearchResult.ok(hits);
             }
             if (dify.isSegmentFallback()) {
                 log.info("Dify retrieve returned empty; trying segment fallback");
-                return segmentFallback(dify, query, k);
+                List<KnowledgeChunk> fb = segmentFallback(dify, query, k);
+                return KnowledgeSearchResult.degraded(fb, "DIFY_RETRIEVE_EMPTY_FALLBACK");
             }
-            return hits;
+            return KnowledgeSearchResult.ok(hits);
         } catch (Exception ex) {
             if (dify.isSegmentFallback()) {
                 log.warn("Dify retrieve failed ({}), using segment fallback", ex.getMessage());
                 try {
-                    return segmentFallback(dify, query, k);
+                    List<KnowledgeChunk> fb = segmentFallback(dify, query, k);
+                    return KnowledgeSearchResult.degraded(fb, "DIFY_RETRIEVE_ERROR_FALLBACK");
                 } catch (Exception fallbackEx) {
                     log.warn("Dify segment fallback failed: {}", fallbackEx.getMessage());
-                    return List.of();
+                    return KnowledgeSearchResult.degraded(List.of(), "DIFY_ALL_FAILED");
                 }
             }
             log.warn("Dify retrieve failed: {}", ex.getMessage());
-            throw new IllegalStateException("Dify knowledge retrieve failed: " + ex.getMessage(), ex);
+            return KnowledgeSearchResult.degraded(List.of(), "DIFY_RETRIEVE_FAILED");
         }
     }
 

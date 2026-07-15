@@ -23,11 +23,26 @@ public class RouteLogRepository {
             RoutingDecision decision,
             long latencyMs,
             String requestId) {
+        insert(id, sessionId, messageId, userQuery, decision, latencyMs, requestId, null, false, false);
+    }
+
+    public void insert(
+            UUID id,
+            UUID sessionId,
+            UUID messageId,
+            String userQuery,
+            RoutingDecision decision,
+            long latencyMs,
+            String requestId,
+            String ownerId,
+            boolean degraded,
+            boolean handoff) {
         jdbcTemplate.update("""
                 INSERT INTO cs_route_log
                 (id, session_id, message_id, user_query, intent, confidence,
-                 classifier_model_id, answer_model_id, rag_enabled, latency_ms, request_id, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                 classifier_model_id, answer_model_id, rag_enabled, latency_ms, request_id,
+                 owner_id, degraded, handoff, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                 """,
                 id,
                 sessionId,
@@ -39,6 +54,9 @@ public class RouteLogRepository {
                 decision.answerModelId(),
                 decision.ragEnabled(),
                 latencyMs,
-                requestId);
+                requestId,
+                ownerId,
+                degraded,
+                handoff);
     }
 }

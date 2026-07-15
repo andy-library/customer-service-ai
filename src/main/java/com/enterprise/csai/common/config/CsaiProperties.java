@@ -58,6 +58,18 @@ public class CsaiProperties {
     @NotNull
     private UploadConfig upload = new UploadConfig();
 
+    @Valid
+    @NotNull
+    private SecuritySettings security = new SecuritySettings();
+
+    @Valid
+    @NotNull
+    private ResilienceConfig resilience = new ResilienceConfig();
+
+    @Valid
+    @NotNull
+    private GuardrailConfig guardrail = new GuardrailConfig();
+
     public String getModelSource() {
         return modelSource;
     }
@@ -132,6 +144,209 @@ public class CsaiProperties {
 
     public void setUpload(UploadConfig upload) {
         this.upload = upload;
+    }
+
+    public SecuritySettings getSecurity() {
+        return security;
+    }
+
+    public void setSecurity(SecuritySettings security) {
+        this.security = security;
+    }
+
+    public ResilienceConfig getResilience() {
+        return resilience;
+    }
+
+    public void setResilience(ResilienceConfig resilience) {
+        this.resilience = resilience;
+    }
+
+    public GuardrailConfig getGuardrail() {
+        return guardrail;
+    }
+
+    public void setGuardrail(GuardrailConfig guardrail) {
+        this.guardrail = guardrail;
+    }
+
+    public static class SecuritySettings {
+        private boolean enabled = false;
+        @Valid
+        private List<ApiKeyConfig> apiKeys = new ArrayList<>();
+        @Valid
+        @NotNull
+        private RateLimitConfig rateLimit = new RateLimitConfig();
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public List<ApiKeyConfig> getApiKeys() {
+            return apiKeys;
+        }
+
+        public void setApiKeys(List<ApiKeyConfig> apiKeys) {
+            this.apiKeys = apiKeys;
+        }
+
+        public RateLimitConfig getRateLimit() {
+            return rateLimit;
+        }
+
+        public void setRateLimit(RateLimitConfig rateLimit) {
+            this.rateLimit = rateLimit;
+        }
+    }
+
+    public static class ApiKeyConfig {
+        @NotBlank
+        private String id;
+        @NotBlank
+        private String key;
+        private List<String> roles = List.of("CLIENT");
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public void setKey(String key) {
+            this.key = key;
+        }
+
+        public List<String> getRoles() {
+            return roles;
+        }
+
+        public void setRoles(List<String> roles) {
+            this.roles = roles;
+        }
+    }
+
+    public static class RateLimitConfig {
+        private boolean enabled = true;
+        @Min(1)
+        private int requestsPerMinute = 60;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public int getRequestsPerMinute() {
+            return requestsPerMinute;
+        }
+
+        public void setRequestsPerMinute(int requestsPerMinute) {
+            this.requestsPerMinute = requestsPerMinute;
+        }
+    }
+
+    public static class ResilienceConfig {
+        @Min(1000)
+        private long classifierTimeoutMs = 15_000L;
+        @Min(1000)
+        private long answerTimeoutMs = 60_000L;
+        @Min(500)
+        private long difyTimeoutMs = 5_000L;
+        @Min(1)
+        private int streamPoolSize = 16;
+        @Min(1)
+        private int streamQueueSize = 100;
+
+        public long getClassifierTimeoutMs() {
+            return classifierTimeoutMs;
+        }
+
+        public void setClassifierTimeoutMs(long classifierTimeoutMs) {
+            this.classifierTimeoutMs = classifierTimeoutMs;
+        }
+
+        public long getAnswerTimeoutMs() {
+            return answerTimeoutMs;
+        }
+
+        public void setAnswerTimeoutMs(long answerTimeoutMs) {
+            this.answerTimeoutMs = answerTimeoutMs;
+        }
+
+        public long getDifyTimeoutMs() {
+            return difyTimeoutMs;
+        }
+
+        public void setDifyTimeoutMs(long difyTimeoutMs) {
+            this.difyTimeoutMs = difyTimeoutMs;
+        }
+
+        public int getStreamPoolSize() {
+            return streamPoolSize;
+        }
+
+        public void setStreamPoolSize(int streamPoolSize) {
+            this.streamPoolSize = streamPoolSize;
+        }
+
+        public int getStreamQueueSize() {
+            return streamQueueSize;
+        }
+
+        public void setStreamQueueSize(int streamQueueSize) {
+            this.streamQueueSize = streamQueueSize;
+        }
+    }
+
+    public static class GuardrailConfig {
+        private boolean requireEvidence = true;
+        private boolean blockInjectionPatterns = true;
+        private String systemPromptClasspath = "prompts/system-cs.md";
+        private String systemPrompt = "";
+
+        public boolean isRequireEvidence() {
+            return requireEvidence;
+        }
+
+        public void setRequireEvidence(boolean requireEvidence) {
+            this.requireEvidence = requireEvidence;
+        }
+
+        public boolean isBlockInjectionPatterns() {
+            return blockInjectionPatterns;
+        }
+
+        public void setBlockInjectionPatterns(boolean blockInjectionPatterns) {
+            this.blockInjectionPatterns = blockInjectionPatterns;
+        }
+
+        public String getSystemPromptClasspath() {
+            return systemPromptClasspath;
+        }
+
+        public void setSystemPromptClasspath(String systemPromptClasspath) {
+            this.systemPromptClasspath = systemPromptClasspath;
+        }
+
+        public String getSystemPrompt() {
+            return systemPrompt;
+        }
+
+        public void setSystemPrompt(String systemPrompt) {
+            this.systemPrompt = systemPrompt;
+        }
     }
 
     /**
@@ -459,6 +674,8 @@ public class CsaiProperties {
         private String defaultAnswerModelId = "answer-fast";
         private boolean forceRag;
         private Map<String, String> intentModelMapping = new HashMap<>();
+        private double confidenceThreshold = 0.55;
+        private boolean handoffOnUnknown = true;
 
         public String getClassifierModelId() {
             return classifierModelId;
@@ -490,6 +707,22 @@ public class CsaiProperties {
 
         public void setIntentModelMapping(Map<String, String> intentModelMapping) {
             this.intentModelMapping = intentModelMapping;
+        }
+
+        public double getConfidenceThreshold() {
+            return confidenceThreshold;
+        }
+
+        public void setConfidenceThreshold(double confidenceThreshold) {
+            this.confidenceThreshold = confidenceThreshold;
+        }
+
+        public boolean isHandoffOnUnknown() {
+            return handoffOnUnknown;
+        }
+
+        public void setHandoffOnUnknown(boolean handoffOnUnknown) {
+            this.handoffOnUnknown = handoffOnUnknown;
         }
     }
 

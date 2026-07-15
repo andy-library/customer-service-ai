@@ -1,9 +1,10 @@
-# Customer Service AI (MVP)
+# Customer Service AI (0.2.0-rc.1 准生产)
 
-企业智能客服 MVP：基于 [microservice-framework](https://github.com/andy-library/microservice-framework) + Spring AI。
+企业智能客服：基于 [microservice-framework](https://github.com/andy-library/microservice-framework) + Spring AI。
 
 **知识库由 Dify 构建；本应用负责编排、意图路由、多模型网关与检索调用。**  
-**模型支持 local（llama.cpp）/ cloud（百炼等 OpenAI 兼容）一键切换。**
+**模型支持 local（llama.cpp）/ cloud（百炼等 OpenAI 兼容）切换。**  
+**准生产能力：API Key 鉴权、限流、超时、降级标记、转人工占位、审计与 Metrics。**
 
 ## 技术栈
 
@@ -89,6 +90,19 @@ CS_AI_MODEL_SOURCE=cloud
 CS_AI_CLOUD_API_KEY=sk-xxx
 # 重启应用即可（Registry 启动时按 model-source 加载）
 ```
+
+### 生产安全开关
+
+```bash
+export CSAI_SECURITY_ENABLED=true
+export CSAI_API_KEY_CLIENT=your-client-key
+export CSAI_API_KEY_ADMIN=your-admin-key
+# 请求头：X-API-Key: your-client-key
+# 或：Authorization: Bearer your-client-key
+```
+
+运维手册：`docs/operations/RUNBOOK.md`  
+生产 PRD/设计：`docs/requirements/PRD-智能客服-Production-v1.md`
 
 详见：`docs/development/DIFY-知识库与可插拔模型.md`、`docs/development/BAILIAN-GLM-配置.md`
 

@@ -2,9 +2,6 @@ package com.enterprise.csai.knowledge;
 
 import java.util.List;
 
-/**
- * Pluggable knowledge retrieval: Dify (enterprise KB), local PgVector, or none.
- */
 public interface KnowledgeRetriever {
 
     /**
@@ -13,4 +10,11 @@ public interface KnowledgeRetriever {
     String provider();
 
     List<KnowledgeChunk> search(String query, int topK);
+
+    /**
+     * Detailed search including degraded signals (default wraps {@link #search}).
+     */
+    default KnowledgeSearchResult searchDetailed(String query, int topK) {
+        return KnowledgeSearchResult.ok(search(query, topK));
+    }
 }

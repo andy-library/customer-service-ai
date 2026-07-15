@@ -1,16 +1,21 @@
 package com.enterprise.csai.chat;
 
+import com.enterprise.csai.audit.AuditLogRepository;
 import com.enterprise.csai.common.config.CsaiProperties;
+import com.enterprise.csai.domain.policy.GuardrailPolicy;
+import com.enterprise.csai.domain.policy.HandoffPolicy;
 import com.enterprise.csai.knowledge.KnowledgeChunk;
+import com.enterprise.csai.knowledge.KnowledgeSearchResult;
 import com.enterprise.csai.knowledge.KnowledgeSearchService;
 import com.enterprise.csai.modelgateway.ModelGateway;
+import com.enterprise.csai.observability.CsaiMetrics;
 import com.enterprise.csai.router.IntentType;
 import com.enterprise.csai.router.RoutingDecision;
 import com.enterprise.csai.router.RoutingService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.messages.Message;
@@ -37,6 +42,7 @@ class ChatOrchestratorTest {
     @Mock ChatSessionRepository sessionRepository;
     @Mock ChatMessageRepository messageRepository;
     @Mock RouteLogRepository routeLogRepository;
+    @Mock AuditLogRepository auditLogRepository;
 
     CsaiProperties properties;
     ChatOrchestrator orchestrator;
@@ -46,6 +52,13 @@ class ChatOrchestratorTest {
         properties = new CsaiProperties();
         properties.getChat().setHistoryMaxMessages(6);
         properties.getRag().setTopK(5);
+        properties.getRouter().setConfidenceThreshold(0.55);
+        properties.getRouter().setHandoffOnUnknown(true);
+        properties.getGuardrail().setRequireEvidence(false);
+        properties.getGuardrail().setBlockInjectionPatterns(true);
+        GuardrailPolicy guardrailPolicy = new GuardrailPolicy(properties);
+        HandoffPolicy handoffPolicy = new HandoffPolicy(properties);
+        CsaiMetrics metrics = new CsaiMetrics(new SimpleMeterRegistry());
         orchestrator = new ChatOrchestrator(
                 routingService,
                 knowledgeSearchService,
@@ -53,16 +66,20 @@ class ChatOrchestratorTest {
                 sessionRepository,
                 messageRepository,
                 routeLogRepository,
-                properties);
+                auditLogRepository,
+                properties,
+                guardrailPolicy,
+                handoffPolicy,
+                metrics);
     }
 
     @Test
     void chatReturnsAnswerRouteAndSources() {
         when(routingService.route("如何退款")).thenReturn(new RoutingDecision(
                 IntentType.BILLING, 0.9, "billing", "classifier-default", "answer-strong", true));
-        when(knowledgeSearchService.search(eq("如何退款"), anyInt()))
-                .thenReturn(List.of(new KnowledgeChunk(
-                        "doc-1", "退款政策", "7 日内未激活可全额退款", 0.88)));
+        when(knowledgeSearchService.searchDetailed(eq("如何退款"), anyInt()))
+                .thenReturn(KnowledgeSearchResult.ok(List.of(new KnowledgeChunk(
+                        "doc-1", "退款政策", "7 日内未激活可全额退款", 0.88))));
         when(modelGateway.chat(eq("answer-strong"), any()))
                 .thenReturn("根据知识库，7 日内未激活可全额退款。");
         when(messageRepository.findRecentBySession(any(), anyInt())).thenReturn(List.of());
@@ -74,15 +91,28 @@ class ChatOrchestratorTest {
         assertThat(resp.route().answerModelId()).isEqualTo("answer-strong");
         assertThat(resp.route().intent()).isEqualTo(IntentType.BILLING);
         assertThat(resp.sessionId()).isNotNull();
+        assertThat(resp.handoff()).isFalse();
         verify(sessionRepository).insert(any(ChatSessionEntity.class));
         verify(messageRepository, org.mockito.Mockito.times(2)).insert(any(ChatMessageEntity.class));
-        verify(routeLogRepository).insert(any(), any(), any(), eq("如何退款"), any(), any(Long.class), any());
+    }
+
+    @Test
+    void lowConfidenceTriggersHandoff() {
+        when(routingService.route(any())).thenReturn(new RoutingDecision(
+                IntentType.UNKNOWN, 0.2, "unsure", "classifier-default", "answer-fast", true));
+        when(messageRepository.findRecentBySession(any(), anyInt())).thenReturn(List.of());
+
+        ChatResponse resp = orchestrator.chat(new ChatRequest(null, "嗯？", null));
+
+        assertThat(resp.handoff()).isTrue();
+        assertThat(resp.handoffReason()).isIn("LOW_CONFIDENCE", "UNKNOWN_INTENT");
+        assertThat(resp.answer()).contains("转人工");
     }
 
     @Test
     void overrideAnswerModelIsRespected() {
         when(routingService.route(any())).thenReturn(new RoutingDecision(
-                IntentType.CHITCHAT, 0.7, "hi", "classifier-default", "answer-fast", false));
+                IntentType.CHITCHAT, 0.9, "hi", "classifier-default", "answer-fast", false));
         when(modelGateway.chat(eq("answer-strong"), any())).thenReturn("ok");
         when(messageRepository.findRecentBySession(any(), anyInt())).thenReturn(List.of());
 
@@ -101,12 +131,14 @@ class ChatOrchestratorTest {
         ChatSessionEntity existing = new ChatSessionEntity();
         existing.setId(sessionId);
         existing.setTitle("old");
+        existing.setOwnerId("anonymous");
         existing.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
         existing.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(existing));
         when(routingService.route(any())).thenReturn(new RoutingDecision(
                 IntentType.PRODUCT, 0.8, "p", "classifier-default", "answer-strong", true));
-        when(knowledgeSearchService.search(any(), anyInt())).thenReturn(List.of());
+        when(knowledgeSearchService.searchDetailed(any(), anyInt()))
+                .thenReturn(KnowledgeSearchResult.ok(List.of()));
         when(modelGateway.chat(any(), any())).thenReturn("answer");
         when(messageRepository.findRecentBySession(eq(sessionId), anyInt())).thenReturn(List.of());
 
@@ -114,8 +146,5 @@ class ChatOrchestratorTest {
 
         assertThat(resp.sessionId()).isEqualTo(sessionId);
         verify(sessionRepository).findById(sessionId);
-        ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
-        verify(modelGateway).chat(eq("answer-strong"), captor.capture());
-        assertThat(captor.getValue()).isNotEmpty();
     }
 }

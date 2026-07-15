@@ -15,6 +15,16 @@ csai:
   model-source: local
   knowledge:
     provider: none
+  security:
+    enabled: false
+    rate-limit:
+      enabled: false
+  guardrail:
+    require-evidence: false
+    block-injection-patterns: false
+  router:
+    handoff-on-unknown: false
+    confidence-threshold: 0.0
 
 logging:
   level:

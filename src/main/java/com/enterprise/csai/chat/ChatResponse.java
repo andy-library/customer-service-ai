@@ -9,6 +9,13 @@ public record ChatResponse(
         UUID sessionId,
         String answer,
         RoutingDecision route,
-        List<SourceDto> sources
+        List<SourceDto> sources,
+        boolean degraded,
+        List<String> degradedReasons,
+        boolean handoff,
+        String handoffReason
 ) {
+    public ChatResponse(UUID sessionId, String answer, RoutingDecision route, List<SourceDto> sources) {
+        this(sessionId, answer, route, sources, false, List.of(), false, null);
+    }
 }

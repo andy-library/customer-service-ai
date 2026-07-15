@@ -122,10 +122,38 @@ csai:
       # Workaround for Dify 1.16.0-rc1 /retrieve session bug when hits exist
       segment-fallback: ${DIFY_SEGMENT_FALLBACK:true}
 
+  security:
+    # Local/dev default off for easy smoke; enable via CSAI_SECURITY_ENABLED=true or prod profile
+    enabled: ${CSAI_SECURITY_ENABLED:false}
+    api-keys:
+      - id: demo-client
+        key: ${CSAI_API_KEY_CLIENT:csai-client-dev-key}
+        roles: [CLIENT]
+      - id: demo-admin
+        key: ${CSAI_API_KEY_ADMIN:csai-admin-dev-key}
+        roles: [ADMIN, CLIENT]
+    rate-limit:
+      enabled: ${CSAI_RATE_LIMIT_ENABLED:true}
+      requests-per-minute: ${CSAI_RATE_LIMIT_RPM:120}
+
+  resilience:
+    classifier-timeout-ms: ${CSAI_CLASSIFIER_TIMEOUT_MS:15000}
+    answer-timeout-ms: ${CSAI_ANSWER_TIMEOUT_MS:120000}
+    dify-timeout-ms: ${CSAI_DIFY_TIMEOUT_MS:5000}
+    stream-pool-size: 16
+    stream-queue-size: 100
+
+  guardrail:
+    require-evidence: ${CSAI_REQUIRE_EVIDENCE:true}
+    block-injection-patterns: true
+    system-prompt-classpath: prompts/system-cs.md
+
   router:
     classifier-model-id: classifier-default
     default-answer-model-id: answer-fast
     force-rag: false
+    confidence-threshold: ${CSAI_CONFIDENCE_THRESHOLD:0.55}
+    handoff-on-unknown: ${CSAI_HANDOFF_ON_UNKNOWN:true}
     intent-model-mapping:
       PRODUCT: answer-strong
       BILLING: answer-strong

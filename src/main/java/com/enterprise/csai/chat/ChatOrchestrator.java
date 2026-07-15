@@ -1,12 +1,21 @@
 package com.enterprise.csai.chat;
 
+import com.enterprise.csai.audit.AuditLogRepository;
 import com.enterprise.csai.common.config.CsaiProperties;
+import com.enterprise.csai.common.error.CsaiErrorCodes;
+import com.enterprise.csai.domain.policy.GuardrailPolicy;
+import com.enterprise.csai.domain.policy.HandoffPolicy;
 import com.enterprise.csai.knowledge.KnowledgeChunk;
+import com.enterprise.csai.knowledge.KnowledgeSearchResult;
 import com.enterprise.csai.knowledge.KnowledgeSearchService;
 import com.enterprise.csai.modelgateway.ModelGateway;
+import com.enterprise.csai.observability.CsaiMetrics;
 import com.enterprise.csai.router.RoutingDecision;
 import com.enterprise.csai.router.RoutingService;
+import com.enterprise.csai.security.ApiKeyPrincipal;
+import com.enterprise.csai.security.CsaiPrincipalHolder;
 import com.microservice.framework.web.context.RequestIdContext;
+import com.microservice.framework.web.exception.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -14,31 +23,26 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ChatOrchestrator {
 
     private static final Logger log = LoggerFactory.getLogger(ChatOrchestrator.class);
-
-    private static final String SYSTEM_BASE = """
-            You are an enterprise customer-service assistant.
-            Prefer answers grounded in the provided knowledge snippets.
-            If knowledge is required but snippets are empty or insufficient, clearly say
-            that the knowledge base does not contain enough evidence. Do not invent
-            internal policy numbers, prices, or ticket IDs that are not present in the snippets.
-            Answer in the same language as the user question when possible.
-            """;
 
     private final RoutingService routingService;
     private final KnowledgeSearchService knowledgeSearchService;
@@ -46,8 +50,12 @@ public class ChatOrchestrator {
     private final ChatSessionRepository sessionRepository;
     private final ChatMessageRepository messageRepository;
     private final RouteLogRepository routeLogRepository;
+    private final AuditLogRepository auditLogRepository;
     private final CsaiProperties properties;
-    private final ExecutorService streamExecutor = Executors.newCachedThreadPool();
+    private final GuardrailPolicy guardrailPolicy;
+    private final HandoffPolicy handoffPolicy;
+    private final CsaiMetrics metrics;
+    private final ExecutorService streamExecutor;
 
     public ChatOrchestrator(
             RoutingService routingService,
@@ -56,81 +64,248 @@ public class ChatOrchestrator {
             ChatSessionRepository sessionRepository,
             ChatMessageRepository messageRepository,
             RouteLogRepository routeLogRepository,
-            CsaiProperties properties) {
+            AuditLogRepository auditLogRepository,
+            CsaiProperties properties,
+            GuardrailPolicy guardrailPolicy,
+            HandoffPolicy handoffPolicy,
+            CsaiMetrics metrics) {
         this.routingService = routingService;
         this.knowledgeSearchService = knowledgeSearchService;
         this.modelGateway = modelGateway;
         this.sessionRepository = sessionRepository;
         this.messageRepository = messageRepository;
         this.routeLogRepository = routeLogRepository;
+        this.auditLogRepository = auditLogRepository;
         this.properties = properties;
+        this.guardrailPolicy = guardrailPolicy;
+        this.handoffPolicy = handoffPolicy;
+        this.metrics = metrics;
+        int pool = Math.max(2, properties.getResilience().getStreamPoolSize());
+        int queue = Math.max(10, properties.getResilience().getStreamQueueSize());
+        this.streamExecutor = new ThreadPoolExecutor(
+                Math.min(4, pool),
+                pool,
+                60L,
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(queue),
+                r -> {
+                    Thread t = new Thread(r, "csai-chat-stream");
+                    t.setDaemon(true);
+                    return t;
+                },
+                new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
+    @Transactional
     public ChatResponse chat(ChatRequest request) {
         long started = System.currentTimeMillis();
-        ChatSessionEntity session = loadOrCreateSession(request.sessionId(), request.message());
-        List<ChatMessageEntity> history = messageRepository.findRecentBySession(
-                session.getId(), properties.getChat().getHistoryMaxMessages());
+        ApiKeyPrincipal principal = CsaiPrincipalHolder.get();
+        String ownerId = principal.id();
+        List<String> degradedReasons = new ArrayList<>();
+        boolean degraded = false;
+        boolean handoff = false;
+        String handoffReason = null;
+        String status = "ok";
 
-        RoutingDecision decision = routingService.route(request.message());
-        String answerModelId = resolveAnswerModel(decision, request.options());
-        boolean ragEnabled = isRagEnabled(decision, request.options());
+        try {
+            if (request.message() == null || request.message().isBlank()) {
+                throw new BusinessException(CsaiErrorCodes.INPUT_REJECTED, "message is blank");
+            }
+            if (guardrailPolicy.looksLikeInjection(request.message())) {
+                ChatSessionEntity session = loadOrCreateSession(request.sessionId(), request.message(), ownerId);
+                RoutingDecision route = new RoutingDecision(
+                        com.enterprise.csai.router.IntentType.UNKNOWN,
+                        0.0,
+                        "injection_blocked",
+                        properties.getRouter().getClassifierModelId(),
+                        properties.getRouter().getDefaultAnswerModelId(),
+                        false);
+                String answer = guardrailPolicy.injectionBlockedAnswer();
+                persistTurn(session, request.message(), answer, route, ownerId, false, false, started);
+                metrics.recordChat("UNKNOWN", "blocked", false, false, System.currentTimeMillis() - started);
+                return new ChatResponse(
+                        session.getId(), answer, route, List.of(), false, List.of(), false, null);
+            }
 
-        List<KnowledgeChunk> chunks = ragEnabled
-                ? knowledgeSearchService.search(request.message(), properties.getRag().getTopK())
-                : List.of();
-        List<SourceDto> sources = toSources(chunks);
+            ChatSessionEntity session = loadOrCreateSession(request.sessionId(), request.message(), ownerId);
+            List<ChatMessageEntity> history = messageRepository.findRecentBySession(
+                    session.getId(), properties.getChat().getHistoryMaxMessages());
 
-        List<Message> messages = buildMessages(history, chunks, request.message(), ragEnabled);
-        String answer = modelGateway.chat(answerModelId, messages);
+            RoutingDecision decision = routingService.route(request.message());
+            if ("classifier_failed".equals(decision.reason())) {
+                degraded = true;
+                degradedReasons.add("CLASSIFIER_FAILED");
+            }
 
-        UUID userMessageId = saveMessage(session.getId(), "USER", request.message());
-        saveMessage(session.getId(), "ASSISTANT", answer);
-        sessionRepository.touch(session.getId());
+            HandoffPolicy.HandoffDecision hd = handoffPolicy.evaluate(decision, request.message());
+            if (hd.handoff()) {
+                handoff = true;
+                handoffReason = hd.reason();
+                String answer = guardrailPolicy.handoffAnswer(hd.reason());
+                RoutingDecision finalDecision = new RoutingDecision(
+                        decision.intent(),
+                        decision.confidence(),
+                        decision.reason(),
+                        decision.classifierModelId(),
+                        decision.answerModelId(),
+                        false);
+                persistTurn(session, request.message(), answer, finalDecision, ownerId, degraded, true, started);
+                audit(ownerId, "HANDOFF", session.getId(), handoffReason);
+                metrics.recordChat(decision.intent().name(), "handoff", degraded, true,
+                        System.currentTimeMillis() - started);
+                return new ChatResponse(
+                        session.getId(), answer, finalDecision, List.of(),
+                        degraded, List.copyOf(degradedReasons), true, handoffReason);
+            }
 
-        RoutingDecision finalDecision = new RoutingDecision(
-                decision.intent(),
-                decision.confidence(),
-                decision.reason(),
-                decision.classifierModelId(),
-                answerModelId,
-                ragEnabled);
+            String answerModelId = resolveAnswerModel(decision, request.options());
+            boolean ragEnabled = isRagEnabled(decision, request.options());
 
-        long latency = System.currentTimeMillis() - started;
-        routeLogRepository.insert(
-                UUID.randomUUID(),
-                session.getId(),
-                userMessageId,
-                request.message(),
-                finalDecision,
-                latency,
-                RequestIdContext.get());
+            List<KnowledgeChunk> chunks = List.of();
+            if (ragEnabled) {
+                KnowledgeSearchResult kr = knowledgeSearchService.searchDetailed(
+                        request.message(), properties.getRag().getTopK());
+                chunks = kr.chunks();
+                if (kr.degraded()) {
+                    degraded = true;
+                    degradedReasons.addAll(kr.degradedReasons());
+                }
+            }
+            List<SourceDto> sources = toSources(chunks);
 
-        log.info("chat done sessionId={} intent={} model={} rag={} sources={} latencyMs={}",
-                session.getId(), finalDecision.intent(), answerModelId, ragEnabled, sources.size(), latency);
+            String answer;
+            if (guardrailPolicy.shouldForceEvidenceDisclaimer(ragEnabled, chunks)
+                    && properties.getGuardrail().isRequireEvidence()) {
+                answer = guardrailPolicy.evidenceInsufficientAnswer();
+                degraded = true;
+                degradedReasons.add("NO_EVIDENCE");
+            } else {
+                List<Message> messages = buildMessages(history, chunks, request.message(), ragEnabled);
+                Duration timeout = Duration.ofMillis(properties.getResilience().getAnswerTimeoutMs());
+                if (modelGateway instanceof com.enterprise.csai.domain.port.ModelPort port) {
+                    answer = port.chat(answerModelId, messages, timeout);
+                } else {
+                    answer = modelGateway.chat(answerModelId, messages);
+                }
+            }
 
-        return new ChatResponse(session.getId(), answer, finalDecision, sources);
+            RoutingDecision finalDecision = new RoutingDecision(
+                    decision.intent(),
+                    decision.confidence(),
+                    decision.reason(),
+                    decision.classifierModelId(),
+                    answerModelId,
+                    ragEnabled);
+
+            long latency = System.currentTimeMillis() - started;
+            UUID userMessageId = saveMessage(session.getId(), "USER", request.message());
+            saveMessage(session.getId(), "ASSISTANT", answer);
+            sessionRepository.touch(session.getId());
+            routeLogRepository.insert(
+                    UUID.randomUUID(),
+                    session.getId(),
+                    userMessageId,
+                    request.message(),
+                    finalDecision,
+                    latency,
+                    RequestIdContext.get(),
+                    ownerId,
+                    degraded,
+                    handoff);
+
+            log.info(
+                    "chat done sessionId={} owner={} intent={} model={} rag={} sources={} degraded={} handoff={} latencyMs={}",
+                    session.getId(), ownerId, finalDecision.intent(), answerModelId, ragEnabled,
+                    sources.size(), degraded, handoff, latency);
+            metrics.recordChat(finalDecision.intent().name(), status, degraded, handoff, latency);
+
+            return new ChatResponse(
+                    session.getId(),
+                    answer,
+                    finalDecision,
+                    sources,
+                    degraded,
+                    List.copyOf(degradedReasons),
+                    handoff,
+                    handoffReason);
+        } catch (BusinessException ex) {
+            metrics.recordChat("unknown", "error", degraded, handoff, System.currentTimeMillis() - started);
+            throw ex;
+        } catch (Exception ex) {
+            metrics.recordChat("unknown", "error", degraded, handoff, System.currentTimeMillis() - started);
+            throw new BusinessException(CsaiErrorCodes.CHAT_FAILED, "chat failed: " + ex.getMessage(), ex);
+        }
     }
 
     public SseEmitter stream(ChatRequest request) {
         SseEmitter emitter = new SseEmitter(300_000L);
+        ApiKeyPrincipal principal = CsaiPrincipalHolder.get();
+        String ownerId = principal.id();
         streamExecutor.execute(() -> {
             try {
                 long started = System.currentTimeMillis();
-                ChatSessionEntity session = loadOrCreateSession(request.sessionId(), request.message());
+                if (guardrailPolicy.looksLikeInjection(request.message())) {
+                    emitter.send(SseEmitter.event().name("delta")
+                            .data(guardrailPolicy.injectionBlockedAnswer()));
+                    emitter.complete();
+                    return;
+                }
+                ChatSessionEntity session = loadOrCreateSession(request.sessionId(), request.message(), ownerId);
                 List<ChatMessageEntity> history = messageRepository.findRecentBySession(
                         session.getId(), properties.getChat().getHistoryMaxMessages());
 
                 RoutingDecision decision = routingService.route(request.message());
+                HandoffPolicy.HandoffDecision hd = handoffPolicy.evaluate(decision, request.message());
+                if (hd.handoff()) {
+                    String answer = guardrailPolicy.handoffAnswer(hd.reason());
+                    emitter.send(SseEmitter.event().name("delta").data(answer));
+                    RoutingDecision finalDecision = new RoutingDecision(
+                            decision.intent(), decision.confidence(), decision.reason(),
+                            decision.classifierModelId(), decision.answerModelId(), false);
+                    persistTurn(session, request.message(), answer, finalDecision, ownerId, false, true, started);
+                    ChatResponse meta = new ChatResponse(
+                            session.getId(), answer, finalDecision, List.of(),
+                            false, List.of(), true, hd.reason());
+                    emitter.send(SseEmitter.event().name("meta").data(meta));
+                    emitter.complete();
+                    return;
+                }
+
                 String answerModelId = resolveAnswerModel(decision, request.options());
                 boolean ragEnabled = isRagEnabled(decision, request.options());
-                List<KnowledgeChunk> chunks = ragEnabled
-                        ? knowledgeSearchService.search(request.message(), properties.getRag().getTopK())
-                        : List.of();
+                List<String> degradedReasons = new ArrayList<>();
+                boolean degraded = false;
+                List<KnowledgeChunk> chunks = List.of();
+                if (ragEnabled) {
+                    KnowledgeSearchResult kr = knowledgeSearchService.searchDetailed(
+                            request.message(), properties.getRag().getTopK());
+                    chunks = kr.chunks();
+                    if (kr.degraded()) {
+                        degraded = true;
+                        degradedReasons.addAll(kr.degradedReasons());
+                    }
+                }
                 List<SourceDto> sources = toSources(chunks);
-                List<Message> messages = buildMessages(history, chunks, request.message(), ragEnabled);
 
+                if (guardrailPolicy.shouldForceEvidenceDisclaimer(ragEnabled, chunks)) {
+                    String answer = guardrailPolicy.evidenceInsufficientAnswer();
+                    emitter.send(SseEmitter.event().name("delta").data(answer));
+                    RoutingDecision finalDecision = new RoutingDecision(
+                            decision.intent(), decision.confidence(), decision.reason(),
+                            decision.classifierModelId(), answerModelId, ragEnabled);
+                    persistTurn(session, request.message(), answer, finalDecision, ownerId, true, false, started);
+                    ChatResponse meta = new ChatResponse(
+                            session.getId(), answer, finalDecision, sources,
+                            true, List.of("NO_EVIDENCE"), false, null);
+                    emitter.send(SseEmitter.event().name("meta").data(meta));
+                    emitter.complete();
+                    return;
+                }
+
+                List<Message> messages = buildMessages(history, chunks, request.message(), ragEnabled);
                 StringBuilder full = new StringBuilder();
+                final boolean degradedFinal = degraded;
+                final List<String> reasonsFinal = List.copyOf(degradedReasons);
                 Flux<String> flux = modelGateway.stream(answerModelId, messages);
                 flux.doOnNext(token -> {
                             full.append(token);
@@ -140,7 +315,7 @@ public class ChatOrchestrator {
                                 throw new IllegalStateException(e);
                             }
                         })
-                        .doOnError(err -> emitter.completeWithError(err))
+                        .doOnError(emitter::completeWithError)
                         .doOnComplete(() -> {
                             try {
                                 String answer = full.toString();
@@ -162,11 +337,17 @@ public class ChatOrchestrator {
                                         request.message(),
                                         finalDecision,
                                         latency,
-                                        RequestIdContext.get());
+                                        RequestIdContext.get(),
+                                        ownerId,
+                                        degradedFinal,
+                                        false);
                                 ChatResponse meta = new ChatResponse(
-                                        session.getId(), answer, finalDecision, sources);
+                                        session.getId(), answer, finalDecision, sources,
+                                        degradedFinal, reasonsFinal, false, null);
                                 emitter.send(SseEmitter.event().name("meta").data(meta));
                                 emitter.complete();
+                                metrics.recordChat(finalDecision.intent().name(), "ok",
+                                        degradedFinal, false, latency);
                             } catch (Exception ex) {
                                 emitter.completeWithError(ex);
                             }
@@ -179,14 +360,66 @@ public class ChatOrchestrator {
         return emitter;
     }
 
-    private ChatSessionEntity loadOrCreateSession(UUID sessionId, String firstMessage) {
-        if (sessionId != null) {
-            return sessionRepository.findById(sessionId).orElseGet(() -> createSession(firstMessage));
-        }
-        return createSession(firstMessage);
+    private void persistTurn(
+            ChatSessionEntity session,
+            String userMessage,
+            String answer,
+            RoutingDecision decision,
+            String ownerId,
+            boolean degraded,
+            boolean handoff,
+            long started) {
+        UUID userMessageId = saveMessage(session.getId(), "USER", userMessage);
+        saveMessage(session.getId(), "ASSISTANT", answer);
+        sessionRepository.touch(session.getId());
+        routeLogRepository.insert(
+                UUID.randomUUID(),
+                session.getId(),
+                userMessageId,
+                userMessage,
+                decision,
+                System.currentTimeMillis() - started,
+                RequestIdContext.get(),
+                ownerId,
+                degraded,
+                handoff);
     }
 
-    private ChatSessionEntity createSession(String firstMessage) {
+    private void audit(String principalId, String eventType, UUID sessionId, String detail) {
+        try {
+            auditLogRepository.insert(
+                    UUID.randomUUID(),
+                    principalId,
+                    eventType,
+                    sessionId,
+                    detail,
+                    RequestIdContext.get());
+        } catch (Exception ex) {
+            log.warn("audit insert failed: {}", ex.getMessage());
+        }
+    }
+
+    private ChatSessionEntity loadOrCreateSession(UUID sessionId, String firstMessage, String ownerId) {
+        if (sessionId != null) {
+            ChatSessionEntity existing = sessionRepository.findById(sessionId)
+                    .orElseThrow(() -> new BusinessException(
+                            CsaiErrorCodes.SESSION_NOT_FOUND, "session not found: " + sessionId));
+            if (existing.getOwnerId() != null
+                    && !existing.getOwnerId().isBlank()
+                    && ownerId != null
+                    && !"anonymous".equals(ownerId)
+                    && !"system".equals(ownerId)
+                    && !existing.getOwnerId().equals(ownerId)) {
+                throw new BusinessException(
+                        CsaiErrorCodes.SESSION_FORBIDDEN,
+                        "session belongs to another principal");
+            }
+            return existing;
+        }
+        return createSession(firstMessage, ownerId);
+    }
+
+    private ChatSessionEntity createSession(String firstMessage, String ownerId) {
         ChatSessionEntity session = new ChatSessionEntity();
         session.setId(UUID.randomUUID());
         String title = firstMessage == null ? "chat" : firstMessage.strip();
@@ -194,6 +427,7 @@ public class ChatOrchestrator {
             title = title.substring(0, 80);
         }
         session.setTitle(title);
+        session.setOwnerId(ownerId);
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         session.setCreatedAt(now);
         session.setUpdatedAt(now);
@@ -236,7 +470,7 @@ public class ChatOrchestrator {
             String userMessage,
             boolean ragEnabled) {
         List<Message> messages = new ArrayList<>();
-        messages.add(new SystemMessage(SYSTEM_BASE + "\n" + formatKnowledge(chunks, ragEnabled)));
+        messages.add(new SystemMessage(guardrailPolicy.systemPrompt() + "\n" + formatKnowledge(chunks, ragEnabled)));
         for (ChatMessageEntity msg : history) {
             if ("USER".equalsIgnoreCase(msg.getRole())) {
                 messages.add(new UserMessage(msg.getContent()));

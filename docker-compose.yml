@@ -15,5 +15,37 @@ services:
       timeout: 5s
       retries: 10
 
+  app:
+    build: .
+    profiles: ["full"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: csai
+      DB_USER: csai
+      DB_PASSWORD: csai
+      SERVER_PORT: 8081
+      CSAI_SECURITY_ENABLED: "true"
+      CSAI_API_KEY_CLIENT: ${CSAI_API_KEY_CLIENT:-csai-client-dev-key}
+      CSAI_API_KEY_ADMIN: ${CSAI_API_KEY_ADMIN:-csai-admin-dev-key}
+      CS_AI_MODEL_SOURCE: ${CS_AI_MODEL_SOURCE:-local}
+      CS_AI_KNOWLEDGE_PROVIDER: ${CS_AI_KNOWLEDGE_PROVIDER:-dify}
+      CS_AI_DEFAULT_BASE_URL: ${CS_AI_DEFAULT_BASE_URL:-http://host.docker.internal:18080/v1}
+      CS_AI_DEFAULT_API_KEY: ${CS_AI_DEFAULT_API_KEY:-sk-local}
+      CS_AI_CLASSIFIER_MODEL: ${CS_AI_CLASSIFIER_MODEL:-local-qwen}
+      CS_AI_ANSWER_STRONG_MODEL: ${CS_AI_ANSWER_STRONG_MODEL:-local-qwen}
+      CS_AI_ANSWER_FAST_MODEL: ${CS_AI_ANSWER_FAST_MODEL:-local-qwen}
+      DIFY_BASE_URL: ${DIFY_BASE_URL:-http://host.docker.internal:15001/v1}
+      DIFY_API_KEY: ${DIFY_API_KEY:-}
+      DIFY_DATASET_ID: ${DIFY_DATASET_ID:-}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   csai_pg:

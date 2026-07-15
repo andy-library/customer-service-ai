@@ -1,6 +1,7 @@
 package com.enterprise.csai.router;
 
 import com.enterprise.csai.common.config.CsaiProperties;
+import com.enterprise.csai.domain.port.ModelPort;
 import com.enterprise.csai.modelgateway.ModelGateway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,6 +9,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -36,10 +38,16 @@ public class RoutingService {
         String classifierId = properties.getRouter().getClassifierModelId();
         String defaultAnswerId = properties.getRouter().getDefaultAnswerModelId();
         try {
-            String raw = modelGateway.chat(classifierId, List.of(
+            Duration timeout = Duration.ofMillis(properties.getResilience().getClassifierTimeoutMs());
+            List<org.springframework.ai.chat.messages.Message> messages = List.of(
                     new SystemMessage(CLASSIFIER_SYSTEM_PROMPT),
-                    new UserMessage(userQuery == null ? "" : userQuery)
-            ));
+                    new UserMessage(userQuery == null ? "" : userQuery));
+            String raw;
+            if (modelGateway instanceof ModelPort port) {
+                raw = port.chat(classifierId, messages, timeout);
+            } else {
+                raw = modelGateway.chat(classifierId, messages);
+            }
             ClassificationResult cr = IntentJsonParser.parse(raw);
             String answerId = resolveAnswerModel(cr.intent());
             boolean rag = properties.getRouter().isForceRag() || cr.intent().requiresKnowledge();
