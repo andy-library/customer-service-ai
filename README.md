@@ -252,8 +252,8 @@ customer-service-ai/
 ├── .run/                                # IDEA 共享运行配置
 ├── docker-compose.yml
 ├── Dockerfile
-├── README.md                            # English
-├── README.zh-CN.md                      # 简体中文
+├── README.md                            # 简体中文（默认）
+├── README.en.md                         # English
 └── pom.xml
 ```
 
