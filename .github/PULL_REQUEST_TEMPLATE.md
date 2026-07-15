@@ -32,4 +32,6 @@
 
 ## 维护者备注 / Maintainer note
 
-本仓库目前主要由维护者个人维护：维护者可直接向 `main` 推送；外部贡献请走 PR，且 **CI 必须通过** 后再合并。
+- 日常小改动：维护者可直推 `main`  
+- **任何 PR 合并：CI 必须全绿**（`test` + `secrets-hygiene`），请勿 “Merge without waiting”  
+- 外部贡献：只能走 PR  

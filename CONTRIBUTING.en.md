@@ -50,7 +50,13 @@ See [docs/getting-started.md](docs/getting-started.md) (Chinese).
 
 ### Maintainer note (solo)
 
-External changes go through PRs with required CI. The repository admin may **bypass** branch rules and push directly to `main` when needed so self-maintenance is not blocked. Direct pushes still run CI on `main`.
+| Case | Rule |
+|------|------|
+| **Small daily changes** | Maintainer may **push `main` directly** (no PR) |
+| **PR merge** | **All CI must be green** (`test` + `secrets-hygiene`) before merge |
+| External contributions | PR only |
+
+Direct pushes still trigger Actions—if CI goes red, push a fix promptly. When merging Dependabot/community PRs, wait for both checks; do not use “Merge without waiting…”.
 
 ## License
 
