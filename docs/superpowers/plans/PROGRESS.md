@@ -1,24 +1,22 @@
-# 实现进度记忆（断点续跑）
+# 实现进度记忆
 
 | 字段 | 值 |
 |------|-----|
-| 最后更新 | 2026-07-15 |
-| 当前分支 | `feat/csai-mvp` |
-| 当前任务 | **百炼联调：.env 非密钥项已补全** |
-| 当前步骤 | 等待用户填写 `CS_AI_DEFAULT_API_KEY` 后启动 smoke |
-| 阻塞 | 仅差百炼 API Key |
+| 分支 | feat/csai-mvp |
+| 状态 | **真实联调：Chat 已通；Embedding 待开通** |
+| 应用 | 运行中 http://localhost:8081 （真实 glm-5.1） |
 
-## 用户待填
+## 已验证
 
-- [ ] `CS_AI_DEFAULT_API_KEY` = 百炼 API Key（可与 CC Switch Ali-GLM 5.1 相同）
+- Key / Base URL / glm-5.1 Chat ✅
+- 闲聊「你好」→ CHITCHAT + 正常中文回复 ✅
+- 路径 404 已修（compatible-mode 不去重 /v1）✅
 
-## 已由助手写入 .env
+## 待用户操作
 
-- Base URL: `https://dashscope.aliyuncs.com/compatible-mode/v1`
-- Chat models: `glm-5.1` × 3 角色
-- Embedding: `text-embedding-v3` / dim `1024`
-- DB / worker / port 8081
+- 百炼控制台开通 **text-embedding-v3**（或告知可用 embedding 模型名+维度）
+- 开通后回复「embedding 已开通」→ 再测上传 + RAG 退款问答
 
-## 下一步
+## 勿泄露
 
-用户填好 Key 后回复「已填 Key」→ `./scripts/check-env.sh` + `run-real.sh` + `smoke-real.sh`
+- .env 含 API Key，永不提交
